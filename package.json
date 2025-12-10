@@ -1,0 +1,63 @@
+{
+  "name": "brigado-burger-pos",
+  "version": "1.0.0",
+  "description": "Enterprise-grade POS system for Brigado Burger restaurant built with Next.js, tRPC, Prisma, and Square",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio",
+    "prisma:seed": "node prisma/seed.js"
+  },
+  "keywords": [
+    "pos",
+    "restaurant",
+    "nextjs",
+    "trpc",
+    "prisma",
+    "square",
+    "typescript"
+  ],
+  "author": "Omar Shahwan",
+  "license": "MIT",
+  "dependencies": {
+    "@next-auth/prisma-adapter": "^1.0.7",
+    "@prisma/adapter-pg": "^7.1.0",
+    "@prisma/client": "^7.1.0",
+    "@tailwindcss/postcss": "^4.1.17",
+    "@tanstack/react-query": "^5.90.12",
+    "@trpc/client": "^11.7.2",
+    "@trpc/next": "^11.7.2",
+    "@trpc/react-query": "^11.7.2",
+    "@trpc/server": "^11.7.2",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "autoprefixer": "^10.4.22",
+    "bcryptjs": "^3.0.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "dotenv": "^17.2.3",
+    "lucide-react": "^0.555.0",
+    "next": "^16.0.7",
+    "next-auth": "^4.24.13",
+    "pg": "^8.16.3",
+    "postcss": "^8.5.6",
+    "prisma": "^7.1.0",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
+    "square": "^43.2.1",
+    "superjson": "^2.2.6",
+    "tailwind-merge": "^3.4.0",
+    "tailwindcss": "^4.1.17",
+    "typescript": "^5.9.3",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^24.10.1",
+    "ts-node": "^10.9.2"
+  }
+}
