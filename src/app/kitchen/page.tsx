@@ -44,7 +44,7 @@ export default function KitchenPage() {
     }
   }
 
-  const formatTime = (date: Date) => {
+  const formatTime = (date: Date | string) => {
     const now = new Date()
     const diffMs = now.getTime() - new Date(date).getTime()
     const diffMins = Math.floor(diffMs / 60000)
@@ -233,14 +233,14 @@ export default function KitchenPage() {
                   <Button
                     className="flex-1 bg-green-600 hover:bg-green-700 text-white"
                     onClick={() => handleStatusUpdate(order.id, 'COMPLETED')}
-                    disabled={updateStatus.isLoading}
+                    disabled={updateStatus.isPending}
                   >
                     Mark as Ready
                   </Button>
                   <Button
                     className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
                     onClick={() => handleMarkAllUpToHere(order.id)}
-                    disabled={updateStatus.isLoading}
+                    disabled={updateStatus.isPending}
                   >
                     Mark All Up To Here
                   </Button>

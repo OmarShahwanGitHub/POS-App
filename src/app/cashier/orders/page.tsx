@@ -15,7 +15,7 @@ export default function OrdersPage() {
     onSuccess: () => refetch(),
   })
 
-  const formatTime = (date: Date) => {
+  const formatTime = (date: Date | string) => {
     return new Date(date).toLocaleString()
   }
 
@@ -126,7 +126,7 @@ export default function OrdersPage() {
                       <Button
                         variant="destructive"
                         onClick={() => handleCancelOrder(order.id)}
-                        disabled={updateStatus.isLoading}
+                        disabled={updateStatus.isPending}
                       >
                         Cancel Order
                       </Button>

@@ -8,6 +8,23 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Brigado Burger - Point of Sale System',
   description: 'Enterprise POS system for Brigado Burger restaurant',
+  manifest: '/manifest.json',
+  themeColor: '#ef4444',
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Brigado POS',
+  },
+  icons: {
+    icon: '/icon-192x192.png',
+    apple: '/icon-192x192.png',
+  },
 }
 
 export default function RootLayout({

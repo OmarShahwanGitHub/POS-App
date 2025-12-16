@@ -5,9 +5,9 @@ import { SquareClient, SquareEnvironment } from 'square'
 // Initialize Square client based on environment
 const isProduction = process.env.SQUARE_ENVIRONMENT === 'production'
 const squareClient = new SquareClient({
-  accessToken: isProduction
-    ? process.env.SQUARE_PROD_ACCESS_TOKEN
-    : process.env.SQUARE_SANDBOX_ACCESS_TOKEN,
+  token: isProduction
+    ? process.env.SQUARE_PROD_ACCESS_TOKEN || ''
+    : process.env.SQUARE_SANDBOX_ACCESS_TOKEN || '',
   environment: isProduction ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
 })
 
@@ -131,7 +131,7 @@ export const orderRouter = router({
       }
 
       try {
-        const { result } = await squareClient.paymentsApi.createPayment({
+        const result = await squareClient.payments.create({
           sourceId: input.sourceId,
           amountMoney: {
             amount: BigInt(Math.round(order.total * 100)), // Convert to cents

@@ -282,7 +282,7 @@ export default function OrderPage() {
                   className="w-full"
                   size="lg"
                   onClick={handleCheckout}
-                  disabled={cart.length === 0 || createOrder.isLoading}
+                  disabled={cart.length === 0 || createOrder.isPending}
                 >
                   <CreditCard className="mr-2 h-4 w-4" />
                   Place Order

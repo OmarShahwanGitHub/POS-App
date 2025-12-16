@@ -30,13 +30,8 @@ export default function CashierPage() {
   const [cashGiven, setCashGiven] = useState('')
   const processingOrderRef = useRef(false)
 
-  const { data: menuItems } = trpc.menu.getAll.useQuery()
+  const { data: menuItems, isLoading: menuLoading } = trpc.menu.getAll.useQuery()
   const createOrder = trpc.order.create.useMutation()
-
-  // Debug: Log the data structure
-  console.log('menuItems:', menuItems)
-  console.log('menuItems type:', typeof menuItems)
-  console.log('Is array?', Array.isArray(menuItems))
 
   const addToCart = (item: any) => {
     // Always create a new cart entry to allow different customizations
@@ -182,9 +177,9 @@ export default function CashierPage() {
 
   const getCustomizations = (cartItemId: string) => {
     const cartItem = cart.find((i) => i.id === cartItemId)
-    if (!cartItem) return []
+    if (!cartItem || !menuItems) return []
 
-    const menuItem = menuItems?.find((m) => m.id === cartItem.menuItemId)
+    const menuItem = menuItems.find((m) => m.id === cartItem.menuItemId)
     if (!menuItem || !menuItem.customizationTemplates) return []
 
     return menuItem.customizationTemplates
@@ -233,22 +228,28 @@ export default function CashierPage() {
                 <CardDescription>Select items to add to order</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {menuItems?.map((item) => (
-                    <Card key={item.id} className="cursor-pointer hover:border-primary">
-                      <CardHeader>
-                        <CardTitle className="text-lg">{item.name}</CardTitle>
-                        <CardDescription>${item.price.toFixed(2)}</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <Button onClick={() => addToCart(item)} className="w-full">
-                          <Plus className="mr-2 h-4 w-4" />
-                          Add to Order
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                {menuLoading ? (
+                  <div className="text-center py-8 text-muted-foreground">Loading menu...</div>
+                ) : !menuItems || menuItems.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">No menu items available</div>
+                ) : (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {menuItems.map((item) => (
+                      <Card key={item.id} className="cursor-pointer hover:border-primary">
+                        <CardHeader>
+                          <CardTitle className="text-lg">{item.name}</CardTitle>
+                          <CardDescription>${item.price.toFixed(2)}</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <Button onClick={() => addToCart(item)} className="w-full">
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add to Order
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -313,7 +314,7 @@ export default function CashierPage() {
                           </div>
                         </div>
 
-                        {item.id === selectedItem && getCustomizations(item.id).length > 0 && (
+                        {!menuLoading && item.id === selectedItem && getCustomizations(item.id).length > 0 && (
                           <div className="space-y-2">
                             <div className="text-xs font-medium">Customizations:</div>
                             <div className="grid grid-cols-2 gap-1">
@@ -364,7 +365,7 @@ export default function CashierPage() {
                           </div>
                         )}
 
-                        {getCustomizations(item.id).length > 0 && (
+                        {!menuLoading && getCustomizations(item.id).length > 0 && (
                           <Button
                             size="sm"
                             variant="ghost"
