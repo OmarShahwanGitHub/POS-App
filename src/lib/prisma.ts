@@ -8,9 +8,24 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 // Prisma 7 with TCP connection requires adapter
-// Use POSTGRES_PRISMA_URL for Neon, fallback to DATABASE_URL for local dev
+// Use POSTGRES_PRISMA_URL for Neon (Vercel prefixes with STORAGE_), fallback to DATABASE_URL for local dev
+const connectionString =
+  process.env.STORAGE_POSTGRES_PRISMA_URL ||
+  process.env.POSTGRES_PRISMA_URL ||
+  process.env.DATABASE_URL
+
+// Debug logging in production to help troubleshoot
+if (process.env.NODE_ENV === 'production') {
+  console.log('[Prisma] Connection string source:', {
+    hasStoragePostgresPrismaUrl: !!process.env.STORAGE_POSTGRES_PRISMA_URL,
+    hasPostgresPrismaUrl: !!process.env.POSTGRES_PRISMA_URL,
+    hasDatabaseUrl: !!process.env.DATABASE_URL,
+    usingConnectionString: connectionString ? connectionString.substring(0, 20) + '...' : 'NONE',
+  })
+}
+
 const pool = globalForPrisma.pool ?? new Pool({
-  connectionString: process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL,
+  connectionString,
   max: 20, // Maximum number of connections
   min: 2, // Keep 2 connections always ready
   idleTimeoutMillis: 60000,
