@@ -8,8 +8,9 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 // Prisma 7 with TCP connection requires adapter
+// Use POSTGRES_PRISMA_URL for Neon, fallback to DATABASE_URL for local dev
 const pool = globalForPrisma.pool ?? new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL,
   max: 20, // Maximum number of connections
   min: 2, // Keep 2 connections always ready
   idleTimeoutMillis: 60000,
