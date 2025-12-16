@@ -1,5 +1,5 @@
 import './globals.css'
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import { Providers } from './providers'
 
@@ -9,13 +9,6 @@ export const metadata: Metadata = {
   title: 'Brigado Burger - Point of Sale System',
   description: 'Enterprise POS system for Brigado Burger restaurant',
   manifest: '/manifest.json',
-  themeColor: '#ef4444',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -25,6 +18,14 @@ export const metadata: Metadata = {
     icon: '/icon-192x192.png',
     apple: '/icon-192x192.png',
   },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: '#ef4444',
 }
 
 export default function RootLayout({
