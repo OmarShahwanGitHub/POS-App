@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { trpc } from '@/lib/trpc'
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { ShoppingCart, Plus, Minus, DollarSign, CreditCard, LogOut, ClipboardList } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import AdminNav from '@/components/AdminNav'
+import { SquarePaymentForm } from '@/components/SquarePaymentForm'
 
 type CartItem = {
   id: string // Unique identifier for this cart entry
@@ -32,6 +33,8 @@ export default function CashierPage() {
 
   const { data: menuItems, isLoading: menuLoading } = trpc.menu.getAll.useQuery()
   const createOrder = trpc.order.create.useMutation()
+  const processSquarePayment = trpc.order.processSquarePayment.useMutation()
+  const [showCardPaymentForm, setShowCardPaymentForm] = useState(false)
 
   const addToCart = (item: any) => {
     // Always create a new cart entry to allow different customizations
@@ -109,31 +112,41 @@ export default function CashierPage() {
       return
     }
 
-    // For card payments, proceed directly
+    // For card payments, show the Square payment form
+    setShowCardPaymentForm(true)
+    processingOrderRef.current = false
+  }
+
+  const handleCardPaymentSuccess = async (token: string) => {
     try {
-      await createOrder.mutateAsync({
+      // Step 1: Create the order
+      const order = await createOrder.mutateAsync({
         items: cart.map((item) => ({
           menuItemId: item.menuItemId,
           quantity: item.quantity,
           customizations: item.customizations.length > 0 ? item.customizations : undefined,
         })),
-        paymentMethod,
+        paymentMethod: 'SQUARE',
         orderType: 'IN_STORE',
         customerName: customerName || undefined,
       })
 
-      alert('Order created successfully!')
+      // Step 2: Process the payment with Square
+      await processSquarePayment.mutateAsync({
+        orderId: order.id,
+        sourceId: token,
+      })
 
-      // Reset cart after alert is dismissed
+      // Success!
+      alert('Payment completed successfully!')
       setCart([])
       setCustomerName('')
+      setShowCardPaymentForm(false)
       setSelectedPaymentMethod('CARD')
-      processingOrderRef.current = false
-    } catch (error) {
-      alert('Failed to create order')
-      // Reset to card on error
+    } catch (error: any) {
+      alert('Payment failed: ' + (error.message || 'Unknown error'))
+      setShowCardPaymentForm(false)
       setSelectedPaymentMethod('CARD')
-      processingOrderRef.current = false
     }
   }
 
@@ -192,6 +205,7 @@ export default function CashierPage() {
       setCustomText({ ...customText, [cartItemId]: '' })
     }
   }
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -466,13 +480,27 @@ export default function CashierPage() {
                   </div>
                 )}
 
+                {/* Square Payment Form */}
+                {showCardPaymentForm && (
+                  <div className="rounded-lg border bg-background p-4">
+                    <SquarePaymentForm
+                      amount={total}
+                      onPaymentSuccess={handleCardPaymentSuccess}
+                      onCancel={() => {
+                        setShowCardPaymentForm(false)
+                        setSelectedPaymentMethod('CARD')
+                      }}
+                    />
+                  </div>
+                )}
+
                 <Button
                   className="w-full"
                   variant="outline"
                   onClick={() => handleCheckout('CARD')}
                   onMouseEnter={() => !processingOrderRef.current && setSelectedPaymentMethod('CARD')}
                   onMouseLeave={() => !processingOrderRef.current && setSelectedPaymentMethod('CARD')}
-                  disabled={cart.length === 0 || createOrder.isPending}
+                  disabled={cart.length === 0 || createOrder.isPending || showCardPaymentForm}
                 >
                   <CreditCard className="mr-2 h-4 w-4" />
                   Pay with Card

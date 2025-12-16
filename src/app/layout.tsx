@@ -33,8 +33,19 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  // Use production Square Web SDK since SQUARE_ENVIRONMENT is set to production
+  const squareWebSDKUrl = process.env.SQUARE_ENVIRONMENT === 'production'
+    ? 'https://web.squarecdn.com/v1/square.js'
+    : 'https://sandbox.web.squarecdn.com/v1/square.js'
+
   return (
     <html lang="en">
+      <head>
+        <script
+          type="text/javascript"
+          src={squareWebSDKUrl}
+        />
+      </head>
       <body className={inter.className}>
         <Providers>{children}</Providers>
       </body>

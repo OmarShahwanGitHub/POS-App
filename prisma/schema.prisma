@@ -93,22 +93,23 @@ model CustomizationTemplate {
 }
 
 model Order {
-  id            String        @id @default(cuid())
-  orderNumber   Int           @unique @default(autoincrement())
-  customerId    String?
-  customer      User?         @relation(fields: [customerId], references: [id])
-  customerName  String?       // For walk-in customers without accounts
-  items         OrderItem[]
-  status        OrderStatus   @default(PENDING)
-  paymentMethod PaymentMethod
-  paymentId     String?       // Square payment ID
-  subtotal      Float
-  tax           Float
-  total         Float
-  orderType     OrderType     @default(IN_STORE)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  completedAt   DateTime?
+  id                String        @id @default(cuid())
+  orderNumber       Int           @unique @default(autoincrement())
+  customerId        String?
+  customer          User?         @relation(fields: [customerId], references: [id])
+  customerName      String?       // For walk-in customers without accounts
+  items             OrderItem[]
+  status            OrderStatus   @default(PENDING)
+  paymentMethod     PaymentMethod
+  paymentId         String?       // Square payment ID
+  terminalCheckoutId String?      // Square Terminal checkout ID
+  subtotal          Float
+  tax               Float
+  total             Float
+  orderType         OrderType     @default(IN_STORE)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  completedAt       DateTime?
 }
 
 enum OrderStatus {

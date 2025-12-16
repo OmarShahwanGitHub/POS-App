@@ -284,4 +284,119 @@ export const orderRouter = router({
       },
     })
   }),
+
+  // Create Terminal checkout for Tap to Pay
+  createTerminalCheckout: cashierProcedure
+    .input(z.object({ orderId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const order = await ctx.prisma.order.findUnique({
+        where: { id: input.orderId },
+      })
+
+      if (!order) {
+        throw new Error('Order not found')
+      }
+
+      // For now, we'll create a simple reference and use Square POS deep link
+      // In production with a physical terminal, you'd use the Terminal API
+      const checkoutId = `checkout-${order.id}-${Date.now()}`
+
+      // Update order with terminal checkout ID
+      await ctx.prisma.order.update({
+        where: { id: input.orderId },
+        data: {
+          terminalCheckoutId: checkoutId,
+        },
+      })
+
+      // Deep link to open Square POS app
+      // Format: square-commerce-v1://payment/create?data={URL_ENCODED_JSON}
+      // Note: You can just pass the total amount - no need to match individual items in Square
+      const applicationId = isProduction
+        ? process.env.SQUARE_PROD_APPLICATION_ID || ''
+        : process.env.SQUARE_SANDBOX_APPLICATION_ID || ''
+      
+      if (!applicationId) {
+        throw new Error(
+          isProduction
+            ? 'SQUARE_PROD_APPLICATION_ID is not configured. Please add it to your .env file.'
+            : 'SQUARE_SANDBOX_APPLICATION_ID is not configured. Please add it to your .env file.'
+        )
+      }
+
+      // Get base URL for callback
+      // Square expects a callback URL to return to the app after payment
+      // For web apps, we use the full web URL
+      const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+      const callbackUrl = `${baseUrl}/cashier?orderId=${order.id}`
+
+      const amountInCents = Math.round(order.total * 100)
+      const paymentData = {
+        client_id: applicationId,
+        amount: amountInCents,
+        currency_code: 'USD',
+        note: `Order ${order.orderNumber}`,
+        client_transaction_id: checkoutId,
+        callback_url: callbackUrl,
+        // Also try ios_callback_url in case Square requires it for iOS devices
+        ios_callback_url: callbackUrl,
+      }
+      // URL-encode the JSON string
+      const encodedData = encodeURIComponent(JSON.stringify(paymentData))
+      const deeplink = `square-commerce-v1://payment/create?data=${encodedData}`
+
+      return {
+        checkoutId,
+        deeplink,
+      }
+    }),
+
+  // Check Terminal checkout status
+  // Note: Without actual Terminal API, we check if order has been updated with paymentId
+  // In production with physical terminal, you'd poll the Terminal API
+  checkTerminalStatus: cashierProcedure
+    .input(z.object({ orderId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const order = await ctx.prisma.order.findUnique({
+        where: { id: input.orderId },
+        select: { terminalCheckoutId: true, status: true, paymentId: true },
+      })
+
+      if (!order || !order.terminalCheckoutId) {
+        return { status: 'NOT_FOUND' }
+      }
+
+      // Check if order has been paid (paymentId set or status changed)
+      if (order.paymentId || order.status !== 'PENDING') {
+        return { status: 'COMPLETED', paymentId: order.paymentId }
+      }
+
+      // Still waiting for payment
+      return { status: 'PENDING' }
+    }),
+
+  // TEMPORARY: Simulate payment completion for testing
+  // Remove this in production when you have actual Square POS integration
+  simulatePaymentComplete: cashierProcedure
+    .input(z.object({ orderId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const order = await ctx.prisma.order.findUnique({
+        where: { id: input.orderId },
+      })
+
+      if (!order) {
+        throw new Error('Order not found')
+      }
+
+      // Simulate successful payment
+      await ctx.prisma.order.update({
+        where: { id: input.orderId },
+        data: {
+          paymentId: `simulated-payment-${Date.now()}`,
+          status: 'PREPARING',
+        },
+      })
+
+      return { success: true }
+    }),
 })
