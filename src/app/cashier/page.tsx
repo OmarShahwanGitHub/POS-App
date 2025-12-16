@@ -196,10 +196,10 @@ export default function CashierPage() {
   return (
     <div className="min-h-screen bg-background">
       {session?.user?.role === 'ADMIN' && <AdminNav />}
-      <div className="p-6">
-        <div className="mx-auto max-w-7xl">
+      <div className="p-2 md:p-6">
+        <div className="mx-auto max-w-full md:max-w-7xl">
           <div className="mb-6 flex items-center justify-between">
-            <h1 className="text-3xl font-bold text-primary">Brigado Burger - Cashier</h1>
+            <h1 className="text-xl md:text-3xl font-bold text-primary">Brigado Burger - Cashier</h1>
             <div className="flex items-center gap-4">
               <Button variant="outline" size="sm" onClick={() => router.push('/cashier/orders')}>
                 <ClipboardList className="mr-2 h-4 w-4" />
@@ -219,7 +219,7 @@ export default function CashierPage() {
             </div>
           </div>
 
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="flex flex-col gap-6 md:grid md:grid-cols-3">
           {/* Menu Items */}
           <div className="md:col-span-2">
             <Card>
@@ -233,19 +233,19 @@ export default function CashierPage() {
                 ) : !menuItems || menuItems.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">No menu items available</div>
                 ) : (
-                  <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="grid gap-4 grid-cols-2">
                     {menuItems.map((item) => (
-                      <Card key={item.id} className="cursor-pointer hover:border-primary">
+                      <Card key={item.id} className="cursor-pointer hover:border-primary flex flex-col">
                         <CardHeader>
                           <CardTitle className="text-lg">{item.name}</CardTitle>
                           <CardDescription>${item.price.toFixed(2)}</CardDescription>
                         </CardHeader>
-                        <CardContent>
-                          <Button onClick={() => addToCart(item)} className="w-full">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add to Order
+                        <CardContent className="flex-grow" />
+                        <CardFooter className="pt-0">
+                          <Button onClick={() => addToCart(item)} className="w-full justify-center">
+                            Add
                           </Button>
-                        </CardContent>
+                        </CardFooter>
                       </Card>
                     ))}
                   </div>
@@ -272,6 +272,7 @@ export default function CashierPage() {
                     onChange={(e) => setCustomerName(e.target.value)}
                     className="mt-1 w-full rounded-md border p-2"
                     placeholder="Walk-in customer"
+                    suppressHydrationWarning
                   />
                 </div>
 
