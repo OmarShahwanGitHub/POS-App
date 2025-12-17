@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { ShoppingCart, Plus, Minus, DollarSign, CreditCard, LogOut, ClipboardList } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import AdminNav from '@/components/AdminNav'
+import { SquarePaymentForm } from '@/components/SquarePaymentForm'
 
 type CartItem = {
   id: string // Unique identifier for this cart entry
@@ -32,12 +33,8 @@ export default function CashierPage() {
 
   const { data: menuItems, isLoading: menuLoading } = trpc.menu.getAll.useQuery()
   const createOrder = trpc.order.create.useMutation()
-  const createTerminalCheckout = trpc.order.createTerminalCheckout.useMutation()
-  const checkTerminalStatus = trpc.order.checkTerminalStatus.useQuery(
-    { orderId: cart.length > 0 ? 'temp' : '' },
-    { enabled: false, refetchInterval: false }
-  )
-  const [processingTerminalPayment, setProcessingTerminalPayment] = useState(false)
+  const processSquarePayment = trpc.order.processSquarePayment.useMutation()
+  const [showPaymentForm, setShowPaymentForm] = useState(false)
   const [currentOrderId, setCurrentOrderId] = useState<string | null>(null)
 
   const addToCart = (item: any) => {
@@ -105,22 +102,19 @@ export default function CashierPage() {
   const handleCheckout = async (paymentMethod: 'CASH' | 'CARD') => {
     if (cart.length === 0 || processingOrderRef.current) return
 
-    // Set the payment method immediately when button is clicked and lock processing
     processingOrderRef.current = true
     setSelectedPaymentMethod(paymentMethod)
 
-    // For cash payments, show the cash input instead of proceeding immediately
+    // For cash payments, show the cash input
     if (paymentMethod === 'CASH') {
       setShowCashInput(true)
       processingOrderRef.current = false
       return
     }
 
-    // For card payments with Terminal API (Tap to Pay)
+    // For card payments with Square Web Payments SDK
     try {
-      setProcessingTerminalPayment(true)
-
-      // Step 1: Create the order
+      // Step 1: Create the order first
       const order = await createOrder.mutateAsync({
         items: cart.map((item) => ({
           menuItemId: item.menuItemId,
@@ -133,23 +127,41 @@ export default function CashierPage() {
       })
 
       setCurrentOrderId(order.id)
-
-      // Step 2: Create Terminal checkout and get deep link
-      const result = await createTerminalCheckout.mutateAsync({
-        orderId: order.id,
-      })
-
-      // Step 3: Open Square POS app via deep link
-      window.location.href = result.deeplink
-
-      // Note: User will be redirected to Square POS app
-      // When they return, we'll check the order status
+      setShowPaymentForm(true)
+      processingOrderRef.current = false
     } catch (error: any) {
-      alert('Failed to initiate payment: ' + (error.message || 'Unknown error'))
-      setProcessingTerminalPayment(false)
+      alert('Failed to create order: ' + (error.message || 'Unknown error'))
       processingOrderRef.current = false
       setSelectedPaymentMethod('CARD')
     }
+  }
+
+  const handlePaymentSuccess = async (token: string) => {
+    if (!currentOrderId) return
+
+    try {
+      await processSquarePayment.mutateAsync({
+        orderId: currentOrderId,
+        sourceId: token,
+      })
+
+      alert('Payment successful! Order has been placed.')
+
+      // Reset everything
+      setCart([])
+      setCustomerName('')
+      setShowPaymentForm(false)
+      setCurrentOrderId(null)
+      setSelectedPaymentMethod('CARD')
+    } catch (error: any) {
+      alert('Payment failed: ' + (error.message || 'Unknown error'))
+    }
+  }
+
+  const handlePaymentCancel = () => {
+    setShowPaymentForm(false)
+    setCurrentOrderId(null)
+    setSelectedPaymentMethod('CARD')
   }
 
   const handleCompleteCashPayment = async () => {
@@ -482,27 +494,28 @@ export default function CashierPage() {
                   </div>
                 )}
 
-                {/* Terminal Payment Status */}
-                {processingTerminalPayment && (
-                  <div className="rounded-lg border bg-muted/50 p-4 text-center space-y-2">
-                    <div className="text-sm font-medium">Opening Square POS...</div>
-                    <div className="text-xs text-muted-foreground">
-                      Complete the payment in the Square POS app
-                    </div>
-                  </div>
+                {/* Square Payment Form */}
+                {showPaymentForm && (
+                  <SquarePaymentForm
+                    amount={total}
+                    onPaymentSuccess={handlePaymentSuccess}
+                    onCancel={handlePaymentCancel}
+                  />
                 )}
 
-                <Button
-                  className="w-full"
-                  variant="outline"
-                  onClick={() => handleCheckout('CARD')}
-                  onMouseEnter={() => !processingOrderRef.current && setSelectedPaymentMethod('CARD')}
-                  onMouseLeave={() => !processingOrderRef.current && setSelectedPaymentMethod('CARD')}
-                  disabled={cart.length === 0 || createOrder.isPending || processingTerminalPayment}
-                >
-                  <CreditCard className="mr-2 h-4 w-4" />
-                  {processingTerminalPayment ? 'Processing...' : 'Pay with Card (Tap to Pay)'}
-                </Button>
+                {!showPaymentForm && (
+                  <Button
+                    className="w-full"
+                    variant="outline"
+                    onClick={() => handleCheckout('CARD')}
+                    onMouseEnter={() => !processingOrderRef.current && setSelectedPaymentMethod('CARD')}
+                    onMouseLeave={() => !processingOrderRef.current && setSelectedPaymentMethod('CARD')}
+                    disabled={cart.length === 0 || createOrder.isPending}
+                  >
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Pay with Card
+                  </Button>
+                )}
               </CardFooter>
             </Card>
           </div>
