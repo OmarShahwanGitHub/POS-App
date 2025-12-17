@@ -326,9 +326,9 @@ export const orderRouter = router({
 
       // Get base URL for callback
       // Square expects a callback URL to return to the app after payment
-      // For web apps, we use the full web URL
+      // For web apps, we use the full web URL (no query params - Square doesn't allow them)
       const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
-      const callbackUrl = `${baseUrl}/cashier?orderId=${order.id}`
+      const callbackUrl = `${baseUrl}/cashier`
 
       const amountInCents = Math.round(order.total * 100)
       const paymentData = {
