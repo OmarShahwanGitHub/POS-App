@@ -135,7 +135,7 @@ export default function CashierPage() {
       setSelectedPaymentMethod('CARD')
     }
   }
-
+//
   const handlePaymentSuccess = async (token: string) => {
     if (!currentOrderId) return
 
