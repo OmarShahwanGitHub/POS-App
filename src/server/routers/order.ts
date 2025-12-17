@@ -332,14 +332,17 @@ export const orderRouter = router({
 
       const amountInCents = Math.round(order.total * 100)
       const paymentData = {
-        client_id: applicationId,
-        amount: amountInCents,
-        currency_code: 'USD',
-        note: `Order ${order.orderNumber}`,
-        client_transaction_id: checkoutId,
+        amount_money: {
+          amount: amountInCents.toString(),
+          currency_code: 'USD',
+        },
         callback_url: callbackUrl,
-        // Also try ios_callback_url in case Square requires it for iOS devices
-        ios_callback_url: callbackUrl,
+        client_id: applicationId,
+        version: '1.3',
+        notes: `Order ${order.orderNumber}`,
+        options: {
+          supported_tender_types: ['CREDIT_CARD', 'CASH', 'OTHER', 'SQUARE_GIFT_CARD', 'CARD_ON_FILE'],
+        },
       }
       // URL-encode the JSON string
       const encodedData = encodeURIComponent(JSON.stringify(paymentData))
