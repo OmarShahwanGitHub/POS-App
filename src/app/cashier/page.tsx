@@ -152,12 +152,13 @@ export default function CashierPage() {
     }
   }
 
-  const handleCompleteCashPayment = async () => {
+  const handleCompleteCashPayment = async (skipCalculation = false) => {
+    // Play click sound
+    playClickSound()
+
+    // If cash amount is entered and valid, show change calculation
     const cashAmount = parseFloat(cashGiven)
-    if (isNaN(cashAmount) || cashAmount < subtotal) {
-      alert(`Insufficient cash. Total is $${subtotal.toFixed(2)}`)
-      return
-    }
+    const hasValidCash = !isNaN(cashAmount) && cashAmount >= subtotal
 
     processingOrderRef.current = true
 
@@ -173,8 +174,12 @@ export default function CashierPage() {
         customerName: customerName || undefined,
       })
 
-      const change = cashAmount - subtotal
-      alert(`Order created successfully!\n\nChange: $${change.toFixed(2)}`)
+      if (hasValidCash) {
+        const change = cashAmount - subtotal
+        alert(`Order created successfully!\n\nChange: $${change.toFixed(2)}`)
+      } else {
+        alert(`Order created successfully!`)
+      }
 
       // Reset everything
       setCart([])
@@ -188,6 +193,40 @@ export default function CashierPage() {
       setSelectedPaymentMethod('CARD')
       processingOrderRef.current = false
     }
+  }
+
+  const handleCardPaymentComplete = () => {
+    // Play click sound
+    playClickSound()
+
+    // Reset everything and start fresh
+    setCart([])
+    setCustomerName('')
+    setProcessingTerminalPayment(false)
+    setCurrentOrderId(null)
+    setSelectedPaymentMethod('CARD')
+    processingOrderRef.current = false
+
+    alert('Order complete! Ready for next customer.')
+  }
+
+  // Click sound function
+  const playClickSound = () => {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+    const oscillator = audioContext.createOscillator()
+    const gainNode = audioContext.createGain()
+
+    oscillator.connect(gainNode)
+    gainNode.connect(audioContext.destination)
+
+    oscillator.frequency.value = 800
+    oscillator.type = 'sine'
+
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1)
+
+    oscillator.start(audioContext.currentTime)
+    oscillator.stop(audioContext.currentTime + 0.1)
   }
 
   const getCustomizations = (cartItemId: string) => {
@@ -258,7 +297,7 @@ export default function CashierPage() {
                         </CardHeader>
                         <CardContent className="flex-grow" />
                         <CardFooter className="pt-0">
-                          <Button onClick={() => addToCart(item)} className="w-full justify-center">
+                          <Button onClick={() => { playClickSound(); addToCart(item); }} className="w-full justify-center active:scale-95 transition-transform">
                             Add
                           </Button>
                         </CardFooter>
@@ -314,7 +353,8 @@ export default function CashierPage() {
                             <Button
                               size="icon"
                               variant="outline"
-                              onClick={() => removeFromCart(item.id)}
+                              onClick={() => { playClickSound(); removeFromCart(item.id); }}
+                              className="active:scale-95 transition-transform"
                             >
                               <Minus className="h-4 w-4" />
                             </Button>
@@ -322,9 +362,10 @@ export default function CashierPage() {
                             <Button
                               size="icon"
                               variant="outline"
-                              onClick={() => setCart(cart.map((i) =>
+                              onClick={() => { playClickSound(); setCart(cart.map((i) =>
                                 i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
-                              ))}
+                              )); }}
+                              className="active:scale-95 transition-transform"
                             >
                               <Plus className="h-4 w-4" />
                             </Button>
@@ -344,8 +385,8 @@ export default function CashierPage() {
                                     key={custom.id}
                                     size="sm"
                                     variant={isSelected ? "default" : "outline"}
-                                    onClick={() => addCustomization(item.id, { type: custom.type, name: custom.name, price: custom.price })}
-                                    className="text-xs"
+                                    onClick={() => { playClickSound(); addCustomization(item.id, { type: custom.type, name: custom.name, price: custom.price }); }}
+                                    className="text-xs active:scale-95 transition-transform"
                                   >
                                     {custom.name}{custom.price > 0 && ` (+$${custom.price.toFixed(2)})`}
                                   </Button>
@@ -372,8 +413,9 @@ export default function CashierPage() {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => addCustomText(item.id)}
+                                  onClick={() => { playClickSound(); addCustomText(item.id); }}
                                   disabled={!customText[item.id]?.trim()}
+                                  className="active:scale-95 transition-transform"
                                 >
                                   Add
                                 </Button>
@@ -386,9 +428,11 @@ export default function CashierPage() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() =>
-                              setSelectedItem(selectedItem === item.id ? null : item.id)
-                            }
+                            onClick={() => {
+                              playClickSound();
+                              setSelectedItem(selectedItem === item.id ? null : item.id);
+                            }}
+                            className="active:scale-95 transition-transform"
                           >
                             {selectedItem === item.id ? 'Hide' : 'Show'} Customizations
                           </Button>
@@ -417,8 +461,8 @@ export default function CashierPage() {
               </CardContent>
               <CardFooter className="flex-col gap-2">
                 <Button
-                  className="w-full"
-                  onClick={() => handleCheckout('CASH')}
+                  className="w-full active:scale-95 transition-transform"
+                  onClick={() => { playClickSound(); handleCheckout('CASH'); }}
                   onMouseEnter={() => !processingOrderRef.current && setSelectedPaymentMethod('CASH')}
                   onMouseLeave={() => !processingOrderRef.current && setSelectedPaymentMethod('CARD')}
                   disabled={cart.length === 0 || createOrder.isPending}
@@ -462,18 +506,19 @@ export default function CashierPage() {
                     </div>
                     <div className="flex gap-2">
                       <Button
-                        className="flex-1"
-                        onClick={handleCompleteCashPayment}
-                        disabled={!cashGiven || parseFloat(cashGiven) < subtotal}
+                        className="flex-1 active:scale-95 transition-transform"
+                        onClick={() => handleCompleteCashPayment(false)}
                       >
                         Complete
                       </Button>
                       <Button
                         variant="outline"
+                        className="flex-1 active:scale-95 transition-transform"
                         onClick={() => {
-                          setShowCashInput(false)
-                          setCashGiven('')
-                          setSelectedPaymentMethod('CARD')
+                          playClickSound();
+                          setShowCashInput(false);
+                          setCashGiven('');
+                          setSelectedPaymentMethod('CARD');
                         }}
                       >
                         Cancel
@@ -484,18 +529,18 @@ export default function CashierPage() {
 
                 {/* Terminal Payment Status */}
                 {processingTerminalPayment && (
-                  <div className="rounded-lg border bg-muted/50 p-4 text-center space-y-2">
-                    <div className="text-sm font-medium">Opening Square POS...</div>
-                    <div className="text-xs text-muted-foreground">
-                      Complete the payment in the Square POS app
-                    </div>
-                  </div>
+                  <Button
+                    className="w-full bg-green-600 hover:bg-green-700 active:scale-95 transition-transform"
+                    onClick={handleCardPaymentComplete}
+                  >
+                    Paid ✓
+                  </Button>
                 )}
 
                 <Button
-                  className="w-full"
+                  className="w-full active:scale-95 transition-transform"
                   variant="outline"
-                  onClick={() => handleCheckout('CARD')}
+                  onClick={() => { playClickSound(); handleCheckout('CARD'); }}
                   onMouseEnter={() => !processingOrderRef.current && setSelectedPaymentMethod('CARD')}
                   onMouseLeave={() => !processingOrderRef.current && setSelectedPaymentMethod('CARD')}
                   disabled={cart.length === 0 || createOrder.isPending || processingTerminalPayment}

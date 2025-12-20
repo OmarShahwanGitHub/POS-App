@@ -402,4 +402,153 @@ export const orderRouter = router({
 
       return { success: true }
     }),
+
+  // Edit an existing order
+  editOrder: cashierProcedure
+    .input(
+      z.object({
+        orderId: z.string(),
+        items: z.array(orderItemSchema),
+        customerName: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const existingOrder = await ctx.prisma.order.findUnique({
+        where: { id: input.orderId },
+        include: { items: true },
+      })
+
+      if (!existingOrder) {
+        throw new Error('Order not found')
+      }
+
+      // Fetch menu items for pricing
+      const menuItems = await ctx.prisma.menuItem.findMany({
+        where: {
+          id: { in: input.items.map((item) => item.menuItemId) },
+        },
+      })
+
+      // Recalculate totals
+      let subtotal = 0
+      const orderItems = input.items.map((item) => {
+        const menuItem = menuItems.find((mi) => mi.id === item.menuItemId)!
+        const customizationTotal = item.customizations?.reduce((sum, c) => sum + (c.price || 0), 0) || 0
+        const itemTotal = (menuItem.price + customizationTotal) * item.quantity
+        subtotal += itemTotal
+
+        return {
+          menuItemId: item.menuItemId,
+          quantity: item.quantity,
+          price: menuItem.price,
+          customizations: item.customizations
+            ? {
+                create: item.customizations.map((c) => ({
+                  type: c.type,
+                  name: c.name,
+                  price: c.price || 0,
+                })),
+              }
+            : undefined,
+        }
+      })
+
+      const tax = existingOrder.paymentMethod === 'CARD' || existingOrder.paymentMethod === 'SQUARE'
+        ? (subtotal * 0.026) + 0.10
+        : 0
+      const total = subtotal + tax
+
+      // Delete existing items and create new ones
+      await ctx.prisma.orderItem.deleteMany({
+        where: { orderId: input.orderId },
+      })
+
+      const updatedOrder = await ctx.prisma.order.update({
+        where: { id: input.orderId },
+        data: {
+          customerName: input.customerName,
+          subtotal,
+          tax,
+          total,
+          items: {
+            create: orderItems,
+          },
+        },
+        include: {
+          items: {
+            include: {
+              menuItem: true,
+              customizations: true,
+            },
+          },
+        },
+      })
+
+      return updatedOrder
+    }),
+
+  // Update order number
+  updateOrderNumber: cashierProcedure
+    .input(
+      z.object({
+        orderId: z.string(),
+        newOrderNumber: z.number(),
+        adjustSubsequent: z.boolean(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const existingOrder = await ctx.prisma.order.findUnique({
+        where: { id: input.orderId },
+      })
+
+      if (!existingOrder) {
+        throw new Error('Order not found')
+      }
+
+      const oldOrderNumber = existingOrder.orderNumber
+      const diff = input.newOrderNumber - oldOrderNumber
+
+      if (input.adjustSubsequent && diff !== 0) {
+        // Get all orders that need to be adjusted
+        const ordersToAdjust = await ctx.prisma.order.findMany({
+          where: {
+            orderNumber: {
+              gte: diff > 0 ? input.newOrderNumber : oldOrderNumber + 1,
+            },
+            id: { not: input.orderId },
+          },
+          orderBy: {
+            orderNumber: diff > 0 ? 'desc' : 'asc', // Prevent unique constraint violations
+          },
+        })
+
+        // Update in the correct order to avoid conflicts
+        for (const order of ordersToAdjust) {
+          await ctx.prisma.order.update({
+            where: { id: order.id },
+            data: {
+              orderNumber: order.orderNumber + (diff > 0 ? 1 : -1),
+            },
+          })
+        }
+      }
+
+      // Update the target order
+      const updatedOrder = await ctx.prisma.order.update({
+        where: { id: input.orderId },
+        data: {
+          orderNumber: input.newOrderNumber,
+        },
+        include: {
+          items: {
+            include: {
+              menuItem: true,
+              customizations: true,
+            },
+          },
+        },
+      })
+
+      return updatedOrder
+    }),
 })

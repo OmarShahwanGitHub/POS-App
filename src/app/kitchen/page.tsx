@@ -11,6 +11,7 @@ import AdminNav from '@/components/AdminNav'
 export default function KitchenPage() {
   const { data: session } = useSession()
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [lastOrderUpdateTimes, setLastOrderUpdateTimes] = useState<{ [key: string]: Date }>({})
   const { data: orders, refetch, error } = trpc.order.getKitchenOrders.useQuery(undefined, {
     refetchInterval: 30000, // Auto-refresh every 30 seconds instead of 10
     staleTime: 10000, // Consider data fresh for 10 seconds
@@ -19,6 +20,29 @@ export default function KitchenPage() {
   const updateStatus = trpc.order.updateStatus.useMutation({
     onSuccess: () => refetch(),
   })
+
+  // Check for order edits and show alerts
+  useEffect(() => {
+    if (!orders) return
+
+    orders.forEach((order) => {
+      const orderKey = order.id
+      const lastUpdate = lastOrderUpdateTimes[orderKey]
+      const currentUpdate = new Date(order.updatedAt)
+
+      // If this order has been updated since we last saw it
+      if (lastUpdate && currentUpdate > lastUpdate) {
+        // Show alert for edited order
+        alert(`Order #${order.orderNumber} Edited - OK`)
+      }
+
+      // Update our tracking
+      setLastOrderUpdateTimes((prev) => ({
+        ...prev,
+        [orderKey]: currentUpdate,
+      }))
+    })
+  }, [orders])
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
@@ -135,12 +159,12 @@ export default function KitchenPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       {session?.user?.role === 'ADMIN' && <AdminNav />}
-      <div className="p-6">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-6 flex items-center justify-between">
-            <h1 className="text-3xl font-bold text-primary">Brigado Burger - Kitchen Display</h1>
+      <div className="p-2 sm:p-4 md:p-6 w-full">
+        <div className="w-full">
+          <div className="mb-2 sm:mb-4 md:mb-6 flex items-center justify-between">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-primary">Kitchen Display</h1>
             {session?.user?.role !== 'ADMIN' && (
               <div className="flex items-center gap-4">
                 <div className="text-sm text-muted-foreground">
@@ -160,7 +184,7 @@ export default function KitchenPage() {
             )}
           </div>
 
-        <div className="mb-4 flex items-center justify-between rounded-lg bg-muted p-4">
+        <div className="mb-2 sm:mb-4 flex items-center justify-between rounded-lg bg-muted p-2 sm:p-3 md:p-4">
           <div className="flex items-center gap-2">
             <AlertCircle className="h-5 w-5 text-orange-500" />
             <span className="font-medium">Active Orders: {orders?.length || 0}</span>
@@ -257,16 +281,16 @@ export default function KitchenPage() {
                     ))}
                   </div>
                 </CardContent>
-                <CardFooter className="flex gap-1 p-3 pt-0">
+                <CardFooter className="flex flex-col gap-1 p-2">
                   <Button
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs py-1.5 h-auto"
+                    className="w-full bg-green-600 hover:bg-green-700 text-white text-xs py-1.5 h-auto"
                     onClick={() => handleStatusUpdate(order.id, 'COMPLETED')}
                     disabled={updateStatus.isPending}
                   >
                     Mark as Ready
                   </Button>
                   <Button
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs py-1.5 h-auto"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-1.5 h-auto"
                     onClick={() => handleMarkAllUpToHere(order.id)}
                     disabled={updateStatus.isPending}
                   >
