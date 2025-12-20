@@ -211,7 +211,7 @@ export default function KitchenPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-2 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          <div className="grid gap-1.5 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {orders?.map((order) => {
               // Consolidate items before displaying
               const consolidatedItems = consolidateOrderItems(order.items)
@@ -228,49 +228,49 @@ export default function KitchenPage() {
                 >
                   {hasCheeseCustomization && (
                     <div
-                      className="absolute top-1 left-1/2 transform -translate-x-1/2 bg-white rounded-md px-1 py-0.5 shadow-md z-10 cursor-help group"
+                      className="absolute top-0.5 left-1/2 transform -translate-x-1/2 bg-white rounded-md px-0.5 py-0.5 shadow-md z-10 cursor-help group"
                     >
-                      <span className="text-xl">❗</span>
+                      <span className="text-base">❗</span>
                       <div className="absolute hidden group-hover:block bg-gray-900 text-white text-xs rounded py-1 px-2 bottom-full left-1/2 transform -translate-x-1/2 mb-2 whitespace-nowrap">
                         Cheese customization, inform chef!
                         <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900"></div>
                       </div>
                     </div>
                   )}
-                  <CardHeader className="p-3 pb-2">
+                  <CardHeader className="p-2 pb-1">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">Order #{order.orderNumber}</CardTitle>
-                      <div className="rounded-full px-2 py-0.5 text-xs font-semibold bg-red-200 text-red-800">
+                      <CardTitle className="text-sm">Order #{order.orderNumber}</CardTitle>
+                      <div className="rounded-full px-1.5 py-0.5 text-[10px] font-semibold bg-red-200 text-red-800">
                         {order.status}
                       </div>
                     </div>
-                  <CardDescription className={`flex items-center gap-1 text-xs ${
+                  <CardDescription className={`flex items-center gap-1 text-[10px] ${
                     order.status === 'PENDING' || order.status === 'PREPARING' ? 'dark:text-white' : ''
                   }`}>
-                    <Clock className="h-3 w-3" />
+                    <Clock className="h-2.5 w-2.5" />
                     {formatTime(order.createdAt)}
                     {order.customerName && ` • ${order.customerName}`}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="p-3 pt-0">
-                  <div className="space-y-2">
+                <CardContent className="p-2 pt-0">
+                  <div className="space-y-1">
                     {consolidatedItems.map((item, idx) => (
                       <div
                         key={idx}
-                        className="rounded-md border bg-background p-2"
+                        className="rounded-md border bg-background p-1.5"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-medium text-sm">{item.menuItem.name}</span>
-                          <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-bold text-primary-foreground">
+                          <span className="font-medium text-xs">{item.menuItem.name}</span>
+                          <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">
                             x{item.quantity}
                           </span>
                         </div>
                         {item.customizations && item.customizations.length > 0 && (
-                          <div className="mt-1 flex flex-wrap gap-1">
+                          <div className="mt-0.5 flex flex-wrap gap-0.5">
                             {item.customizations.map((custom: any, cidx: number) => (
                               <div
                                 key={cidx}
-                                className="rounded bg-muted px-1.5 py-0.5 text-xs"
+                                className="rounded bg-muted px-1 py-0.5 text-[10px]"
                               >
                                 {custom.name}
                               </div>
@@ -281,16 +281,16 @@ export default function KitchenPage() {
                     ))}
                   </div>
                 </CardContent>
-                <CardFooter className="flex flex-col gap-1 p-2">
+                <CardFooter className="flex flex-col gap-1 p-1.5">
                   <Button
-                    className="w-full bg-green-600 hover:bg-green-700 text-white text-xs py-1.5 h-auto"
+                    className="w-full bg-green-600 hover:bg-green-700 text-white text-[10px] py-1 h-auto"
                     onClick={() => handleStatusUpdate(order.id, 'COMPLETED')}
                     disabled={updateStatus.isPending}
                   >
                     Mark as Ready
                   </Button>
                   <Button
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-1.5 h-auto"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-[10px] py-1 h-auto"
                     onClick={() => handleMarkAllUpToHere(order.id)}
                     disabled={updateStatus.isPending}
                   >
