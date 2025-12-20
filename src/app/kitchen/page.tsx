@@ -194,7 +194,7 @@ export default function KitchenPage() {
 
               // Check if any customization contains "cheese"
               const hasCheeseCustomization = consolidatedItems.some(item =>
-                item.customizations?.some(c => c.name.toLowerCase().includes('cheese'))
+                item.customizations?.some((c: any) => c.name.toLowerCase().includes('cheese'))
               )
 
               return (
@@ -243,7 +243,7 @@ export default function KitchenPage() {
                         </div>
                         {item.customizations && item.customizations.length > 0 && (
                           <div className="mt-1 flex flex-wrap gap-1">
-                            {item.customizations.map((custom, cidx) => (
+                            {item.customizations.map((custom: any, cidx: number) => (
                               <div
                                 key={cidx}
                                 className="rounded bg-muted px-1.5 py-0.5 text-xs"
