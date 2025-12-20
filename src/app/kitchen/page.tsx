@@ -13,13 +13,55 @@ export default function KitchenPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [lastOrderUpdateTimes, setLastOrderUpdateTimes] = useState<{ [key: string]: Date }>({})
   const { data: orders, refetch, error } = trpc.order.getKitchenOrders.useQuery(undefined, {
-    refetchInterval: 30000, // Auto-refresh every 30 seconds instead of 10
+    refetchInterval: 60000, // Fallback: Auto-refresh every 60 seconds (longer since we have SSE)
     staleTime: 10000, // Consider data fresh for 10 seconds
     retry: false, // Don't retry on auth errors
   })
   const updateStatus = trpc.order.updateStatus.useMutation({
     onSuccess: () => refetch(),
   })
+
+  // Set up Server-Sent Events for real-time updates
+  useEffect(() => {
+    if (!session?.user) return
+
+    // Only connect if user has kitchen or admin role
+    const allowedRoles = ['KITCHEN', 'ADMIN']
+    if (!allowedRoles.includes(session.user.role)) return
+
+    const eventSource = new EventSource('/api/orders/stream')
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        
+        if (data.type === 'connected') {
+          console.log('SSE connected:', data.message)
+          return
+        }
+
+        // When we receive an order event, refetch the orders
+        if (data.type === 'order.created' || data.type === 'order.updated' || data.type === 'order.status.changed') {
+          // Small delay to ensure database is updated
+          setTimeout(() => {
+            refetch()
+          }, 100)
+        }
+      } catch (error) {
+        console.error('Error parsing SSE message:', error)
+      }
+    }
+
+    eventSource.onerror = (error) => {
+      console.error('SSE connection error:', error)
+      // EventSource will automatically reconnect
+    }
+
+    // Cleanup on unmount
+    return () => {
+      eventSource.close()
+    }
+  }, [session?.user, refetch])
 
   // Check for order edits and show alerts
   useEffect(() => {

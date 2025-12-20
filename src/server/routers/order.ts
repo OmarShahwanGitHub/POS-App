@@ -1,6 +1,7 @@
 import { router, protectedProcedure, cashierProcedure, kitchenProcedure } from '../trpc'
 import { z } from 'zod'
 import { SquareClient, SquareEnvironment } from 'square'
+import { orderEvents } from '@/lib/order-events'
 
 // Initialize Square client based on environment
 const isProduction = process.env.SQUARE_ENVIRONMENT === 'production'
@@ -110,6 +111,15 @@ export const orderRouter = router({
         },
       })
 
+      // Emit order created event for real-time updates
+      orderEvents.emit('order.created', {
+        type: 'order.created',
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        status: order.status,
+        timestamp: new Date(),
+      })
+
       return order
     }),
 
@@ -141,12 +151,21 @@ export const orderRouter = router({
         })
 
         // Update order with payment ID
-        await ctx.prisma.order.update({
+        const updatedOrder = await ctx.prisma.order.update({
           where: { id: input.orderId },
           data: {
             paymentId: result.payment?.id,
             status: 'PREPARING',
           },
+        })
+
+        // Emit order status changed event
+        orderEvents.emit('order.status.changed', {
+          type: 'order.status.changed',
+          orderId: updatedOrder.id,
+          orderNumber: updatedOrder.orderNumber,
+          status: updatedOrder.status,
+          timestamp: new Date(),
         })
 
         return { success: true, payment: result.payment }
@@ -223,13 +242,33 @@ export const orderRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      return await ctx.prisma.order.update({
+      const order = await ctx.prisma.order.update({
         where: { id: input.id },
         data: {
           status: input.status,
           completedAt: input.status === 'COMPLETED' ? new Date() : undefined,
         },
       })
+
+      // Emit order status changed event for real-time updates
+      orderEvents.emit('order.status.changed', {
+        type: 'order.status.changed',
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        status: order.status,
+        timestamp: new Date(),
+      })
+
+      // Also emit updated event
+      orderEvents.emit('order.updated', {
+        type: 'order.updated',
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        status: order.status,
+        timestamp: new Date(),
+      })
+
+      return order
     }),
 
   // Get orders for kitchen display
@@ -482,6 +521,15 @@ export const orderRouter = router({
             },
           },
         },
+      })
+
+      // Emit order updated event
+      orderEvents.emit('order.updated', {
+        type: 'order.updated',
+        orderId: updatedOrder.id,
+        orderNumber: updatedOrder.orderNumber,
+        status: updatedOrder.status,
+        timestamp: new Date(),
       })
 
       return updatedOrder
