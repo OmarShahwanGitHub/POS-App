@@ -54,6 +54,34 @@ export default function KitchenPage() {
     return `${diffMins} mins ago`
   }
 
+  // Consolidate duplicate items with same customizations
+  const consolidateOrderItems = (items: any[]) => {
+    const consolidated: any[] = []
+
+    items.forEach(item => {
+      // Find if there's already an identical item (same name and customizations)
+      const existingIndex = consolidated.findIndex(existing => {
+        if (existing.menuItem.name !== item.menuItem.name) return false
+
+        // Check if customizations match
+        const existingCustoms = existing.customizations?.map((c: any) => c.name).sort().join(',') || ''
+        const itemCustoms = item.customizations?.map((c: any) => c.name).sort().join(',') || ''
+
+        return existingCustoms === itemCustoms
+      })
+
+      if (existingIndex !== -1) {
+        // Add quantity to existing item
+        consolidated[existingIndex].quantity += item.quantity
+      } else {
+        // Add new item
+        consolidated.push({ ...item })
+      }
+    })
+
+    return consolidated
+  }
+
   // Check for access denied error
   if (error && error.data?.code === 'UNAUTHORIZED') {
     return (
@@ -159,10 +187,13 @@ export default function KitchenPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-2 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {orders?.map((order) => {
+              // Consolidate items before displaying
+              const consolidatedItems = consolidateOrderItems(order.items)
+
               // Check if any customization contains "cheese"
-              const hasCheeseCustomization = order.items.some(item =>
+              const hasCheeseCustomization = consolidatedItems.some(item =>
                 item.customizations?.some(c => c.name.toLowerCase().includes('cheese'))
               )
 
@@ -173,23 +204,23 @@ export default function KitchenPage() {
                 >
                   {hasCheeseCustomization && (
                     <div
-                      className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-white rounded-md px-2 py-1 shadow-md z-10 cursor-help group"
+                      className="absolute top-1 left-1/2 transform -translate-x-1/2 bg-white rounded-md px-1 py-0.5 shadow-md z-10 cursor-help group"
                     >
-                      <span className="text-3xl">❗</span>
+                      <span className="text-xl">❗</span>
                       <div className="absolute hidden group-hover:block bg-gray-900 text-white text-xs rounded py-1 px-2 bottom-full left-1/2 transform -translate-x-1/2 mb-2 whitespace-nowrap">
                         Cheese customization, inform chef!
                         <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900"></div>
                       </div>
                     </div>
                   )}
-                  <CardHeader>
+                  <CardHeader className="p-3 pb-2">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-2xl">Order #{order.orderNumber}</CardTitle>
-                      <div className="rounded-full px-3 py-1 text-xs font-semibold bg-red-200 text-red-800">
+                      <CardTitle className="text-lg">Order #{order.orderNumber}</CardTitle>
+                      <div className="rounded-full px-2 py-0.5 text-xs font-semibold bg-red-200 text-red-800">
                         {order.status}
                       </div>
                     </div>
-                  <CardDescription className={`flex items-center gap-1 ${
+                  <CardDescription className={`flex items-center gap-1 text-xs ${
                     order.status === 'PENDING' || order.status === 'PREPARING' ? 'dark:text-white' : ''
                   }`}>
                     <Clock className="h-3 w-3" />
@@ -197,28 +228,25 @@ export default function KitchenPage() {
                     {order.customerName && ` • ${order.customerName}`}
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {order.items.map((item) => (
+                <CardContent className="p-3 pt-0">
+                  <div className="space-y-2">
+                    {consolidatedItems.map((item, idx) => (
                       <div
-                        key={item.id}
-                        className="rounded-md border bg-background p-3"
+                        key={idx}
+                        className="rounded-md border bg-background p-2"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-medium">{item.menuItem.name}</span>
-                          <span className="rounded-full bg-primary px-2 py-1 text-xs font-bold text-primary-foreground">
+                          <span className="font-medium text-sm">{item.menuItem.name}</span>
+                          <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-bold text-primary-foreground">
                             x{item.quantity}
                           </span>
                         </div>
                         {item.customizations && item.customizations.length > 0 && (
-                          <div className="mt-2 space-y-1">
-                            <div className="text-xs font-medium text-muted-foreground">
-                              Customizations:
-                            </div>
-                            {item.customizations.map((custom) => (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {item.customizations.map((custom, cidx) => (
                               <div
-                                key={custom.id}
-                                className="rounded bg-muted px-2 py-1 text-xs"
+                                key={cidx}
+                                className="rounded bg-muted px-1.5 py-0.5 text-xs"
                               >
                                 {custom.name}
                               </div>
@@ -229,16 +257,16 @@ export default function KitchenPage() {
                     ))}
                   </div>
                 </CardContent>
-                <CardFooter className="flex gap-2">
+                <CardFooter className="flex gap-1 p-3 pt-0">
                   <Button
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs py-1.5 h-auto"
                     onClick={() => handleStatusUpdate(order.id, 'COMPLETED')}
                     disabled={updateStatus.isPending}
                   >
                     Mark as Ready
                   </Button>
                   <Button
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs py-1.5 h-auto"
                     onClick={() => handleMarkAllUpToHere(order.id)}
                     disabled={updateStatus.isPending}
                   >
