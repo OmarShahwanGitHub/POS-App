@@ -175,13 +175,6 @@ export default function CashierPage() {
         customerName: customerName || undefined,
       })
 
-      if (hasValidCash) {
-        const change = cashAmount - subtotal
-        alert(`Order created successfully!\n\nChange: $${change.toFixed(2)}`)
-      } else {
-        alert(`Order created successfully!`)
-      }
-
       // Reset everything
       setCart([])
       setCustomerName('')
@@ -207,8 +200,6 @@ export default function CashierPage() {
     setCurrentOrderId(null)
     setSelectedPaymentMethod('CARD')
     processingOrderRef.current = false
-
-    alert('Order complete! Ready for next customer.')
   }
 
   // Click sound function
