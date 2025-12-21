@@ -63,7 +63,7 @@ export default function KitchenPage() {
     }
   }, [session?.user, refetch])
 
-  // Check for order edits and show alerts
+  // Check for order edits and new orders, show alerts and vibrate
   useEffect(() => {
     if (!orders) return
 
@@ -72,8 +72,20 @@ export default function KitchenPage() {
       const lastUpdate = lastOrderUpdateTimes[orderKey]
       const currentUpdate = new Date(order.updatedAt)
 
-      // If this order has been updated since we last saw it
-      if (lastUpdate && currentUpdate > lastUpdate) {
+      // New order: if we've never seen this order before
+      if (!lastUpdate) {
+        // Vibrate for new order (single strong vibration)
+        if (navigator.vibrate) {
+          navigator.vibrate(300)
+        }
+      }
+      // Updated order: if this order has been updated since we last saw it
+      else if (currentUpdate > lastUpdate) {
+        // Vibrate the phone (pattern: vibrate 200ms, pause 100ms, vibrate 200ms)
+        if (navigator.vibrate) {
+          navigator.vibrate([200, 100, 200])
+        }
+
         // Show alert for edited order
         alert(`Order #${order.orderNumber} Edited - OK`)
       }
