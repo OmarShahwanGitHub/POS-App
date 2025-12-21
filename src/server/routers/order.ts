@@ -597,6 +597,122 @@ export const orderRouter = router({
         },
       })
 
+      // Reset the orderNumber sequence to avoid conflicts in future auto-increments
+      const maxOrder = await ctx.prisma.order.findFirst({
+        orderBy: {
+          orderNumber: 'desc',
+        },
+        select: {
+          orderNumber: true,
+        },
+      })
+
+      if (maxOrder) {
+        await ctx.prisma.$executeRawUnsafe(
+          `SELECT setval(pg_get_serial_sequence('"Order"', 'orderNumber'), ${maxOrder.orderNumber}, true);`
+        )
+      }
+
       return updatedOrder
+    }),
+
+  // Start new session - archive all orders to history and clear main orders table
+  startNewSession: cashierProcedure
+    .mutation(async ({ ctx }) => {
+      // Get all orders with their items and customizations
+      const ordersToArchive = await ctx.prisma.order.findMany({
+        include: {
+          items: {
+            include: {
+              menuItem: true,
+              customizations: true,
+            },
+          },
+        },
+      })
+
+      // Archive each order to OrderHistory
+      for (const order of ordersToArchive) {
+        await ctx.prisma.orderHistory.create({
+          data: {
+            orderNumber: order.orderNumber,
+            customerId: order.customerId,
+            customerName: order.customerName,
+            status: order.status === 'PENDING' || order.status === 'PREPARING' || order.status === 'READY'
+              ? 'COMPLETED'
+              : order.status,
+            paymentMethod: order.paymentMethod,
+            paymentId: order.paymentId,
+            terminalCheckoutId: order.terminalCheckoutId,
+            subtotal: order.subtotal,
+            tax: order.tax,
+            total: order.total,
+            orderType: order.orderType,
+            createdAt: order.createdAt,
+            updatedAt: order.updatedAt,
+            completedAt: order.completedAt || new Date(),
+            items: {
+              create: order.items.map(item => ({
+                menuItemName: item.menuItem.name,
+                quantity: item.quantity,
+                price: item.price,
+                createdAt: item.createdAt,
+                customizations: {
+                  create: item.customizations.map(custom => ({
+                    type: custom.type,
+                    name: custom.name,
+                    price: custom.price,
+                    createdAt: custom.createdAt,
+                  })),
+                },
+              })),
+            },
+          },
+        })
+      }
+
+      // Delete all orders from the main table
+      await ctx.prisma.order.deleteMany({})
+
+      // Reset the PostgreSQL sequence to start from 1 for the next order
+      await ctx.prisma.$executeRawUnsafe(
+        `SELECT setval(pg_get_serial_sequence('"Order"', 'orderNumber'), 1, false);`
+      )
+
+      // Emit order updated events for real-time updates
+      orderEvents.emit('order.updated', {
+        type: 'order.updated',
+        orderId: 'bulk-update',
+        orderNumber: 0,
+        status: 'COMPLETED',
+        timestamp: new Date(),
+      })
+
+      return { success: true, ordersArchived: ordersToArchive.length }
+    }),
+
+  // Get order history
+  getOrderHistory: protectedProcedure
+    .input(
+      z
+        .object({
+          limit: z.number().min(1).max(100).default(50),
+        })
+        .optional()
+    )
+    .query(async ({ ctx, input }) => {
+      return await ctx.prisma.orderHistory.findMany({
+        include: {
+          items: {
+            include: {
+              customizations: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: input?.limit,
+      })
     }),
 })

@@ -21,6 +21,7 @@ export default function OrdersPage() {
   const { data: session } = useSession()
   const router = useRouter()
   const { data: orders, refetch } = trpc.order.getAll.useQuery()
+  const { data: orderHistory } = trpc.order.getOrderHistory.useQuery()
   const { data: menuItems } = trpc.menu.getAll.useQuery()
   const updateStatus = trpc.order.updateStatus.useMutation({
     onSuccess: () => refetch(),
@@ -226,15 +227,18 @@ export default function OrdersPage() {
           </div>
         </div>
 
-        <div className="grid gap-4">
-          {orders && orders.length === 0 ? (
-            <Card>
-              <CardContent className="flex h-64 items-center justify-center">
-                <p className="text-muted-foreground">No orders found</p>
-              </CardContent>
-            </Card>
-          ) : (
-            orders?.map((order) => (
+        {/* Current Orders Section */}
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold mb-4">Current Orders</h2>
+          <div className="grid gap-4">
+            {orders && orders.length === 0 ? (
+              <Card>
+                <CardContent className="flex h-32 items-center justify-center">
+                  <p className="text-muted-foreground">No current orders</p>
+                </CardContent>
+              </Card>
+            ) : (
+              orders?.map((order) => (
               <Card key={order.id}>
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -534,8 +538,97 @@ export default function OrdersPage() {
                 </CardContent>
               </Card>
             ))
-          )}
+            )}
+          </div>
         </div>
+
+        {/* Archived Orders Section */}
+        {orderHistory && orderHistory.length > 0 && (
+          <div>
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              Archived Orders
+              <span className="text-sm font-normal text-muted-foreground">
+                ({orderHistory.length} orders)
+              </span>
+            </h2>
+            <div className="grid gap-4">
+              {orderHistory.map((order) => (
+                <Card key={order.id} className="opacity-75">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="flex items-center gap-2">
+                          Order #{order.orderNumber}
+                          <span className="text-xs font-normal px-2 py-1 rounded bg-gray-200 text-gray-700">
+                            ARCHIVED
+                          </span>
+                        </CardTitle>
+                        <CardDescription>
+                          {formatTime(order.createdAt)}
+                          {order.customerName && ` • ${order.customerName}`}
+                        </CardDescription>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                            order.status === 'PENDING'
+                              ? 'bg-orange-200 text-orange-800'
+                              : order.status === 'PREPARING'
+                              ? 'bg-blue-200 text-blue-800'
+                              : order.status === 'READY'
+                              ? 'bg-green-200 text-green-800'
+                              : order.status === 'COMPLETED'
+                              ? 'bg-gray-200 text-gray-800'
+                              : 'bg-red-200 text-red-800'
+                          }`}
+                        >
+                          {order.status}
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {order.items.map((item) => (
+                        <div key={item.id} className="flex items-center justify-between border-b pb-2">
+                          <div>
+                            <div className="font-medium">{item.menuItemName}</div>
+                            <div className="text-sm text-muted-foreground">
+                              ${item.price.toFixed(2)} x {item.quantity} = ${(item.price * item.quantity).toFixed(2)}
+                            </div>
+                            {item.customizations && item.customizations.length > 0 && (
+                              <div className="text-xs text-muted-foreground">
+                                {item.customizations.map((c) => c.name).join(', ')}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-4 space-y-1 border-t pt-4">
+                      <div className="flex justify-between text-sm">
+                        <span>Subtotal:</span>
+                        <span>${order.subtotal.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>Tax:</span>
+                        <span>${order.tax.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-lg font-bold">
+                        <span>Total:</span>
+                        <span>${order.total.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>Payment:</span>
+                        <span>{order.paymentMethod}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -5,7 +5,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { trpc } from '@/lib/trpc'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { ShoppingCart, Plus, Minus, DollarSign, CreditCard, LogOut, ClipboardList } from 'lucide-react'
+import { ShoppingCart, Plus, Minus, DollarSign, CreditCard, LogOut, ClipboardList, RotateCcw } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import AdminNav from '@/components/AdminNav'
 
@@ -33,6 +33,7 @@ export default function CashierPage() {
   const { data: menuItems, isLoading: menuLoading } = trpc.menu.getAll.useQuery()
   const createOrder = trpc.order.create.useMutation()
   const createTerminalCheckout = trpc.order.createTerminalCheckout.useMutation()
+  const startNewSession = trpc.order.startNewSession.useMutation()
   const checkTerminalStatus = trpc.order.checkTerminalStatus.useQuery(
     { orderId: cart.length > 0 ? 'temp' : '' },
     { enabled: false, refetchInterval: false }
@@ -247,6 +248,24 @@ export default function CashierPage() {
     }
   }
 
+  const handleNewSession = async () => {
+    playClickSound()
+
+    const confirmed = confirm(
+      'Start a new session?\n\n' +
+      'This will archive all current orders to history and reset order numbers to #1.\n\n' +
+      'Are you sure you want to continue?'
+    )
+
+    if (!confirmed) return
+
+    try {
+      const result = await startNewSession.mutateAsync()
+      alert(`New session started! ${result.ordersArchived} orders archived to history.`)
+    } catch (error) {
+      alert('Failed to start new session')
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -255,19 +274,39 @@ export default function CashierPage() {
         <div className="mx-auto max-w-full md:max-w-7xl">
           <div className="mb-6 flex items-center justify-between">
             <h1 className="text-xl md:text-3xl font-bold text-primary">Brigado Burger - Cashier</h1>
-            <div className="flex items-center gap-4">
-              <Button variant="outline" size="sm" onClick={() => router.push('/cashier/orders')}>
+            <div className="flex items-center gap-2 md:gap-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNewSession}
+                disabled={startNewSession.isPending}
+                className="active:scale-95 transition-transform"
+              >
+                <RotateCcw className="mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">New Session</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push('/cashier/orders')}
+                className="active:scale-95 transition-transform"
+              >
                 <ClipboardList className="mr-2 h-4 w-4" />
-                View Orders
+                <span className="hidden sm:inline">View Orders</span>
               </Button>
               {session?.user?.role !== 'ADMIN' && (
                 <>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="hidden md:block text-sm text-muted-foreground">
                     Logged in as: {session?.user?.name}
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => signOut({ callbackUrl: '/auth/signin' })}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => signOut({ callbackUrl: '/auth/signin' })}
+                    className="active:scale-95 transition-transform"
+                  >
                     <LogOut className="mr-2 h-4 w-4" />
-                    Logout
+                    <span className="hidden sm:inline">Logout</span>
                   </Button>
                 </>
               )}

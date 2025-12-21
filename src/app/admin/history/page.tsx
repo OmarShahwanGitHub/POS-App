@@ -6,11 +6,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-export default function HistoryPage() {
-  const { data: orders } = trpc.order.getAll.useQuery()
-  const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set())
+type Session = {
+  sessionNumber: number
+  orders: NonNullable<typeof orders>
+  totalRevenue: number
+}
 
-  // Group orders by date
+export default function HistoryPage() {
+  const { data: orders } = trpc.order.getOrderHistory.useQuery()
+  const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set())
+  const [expandedSessions, setExpandedSessions] = useState<Set<string>>(new Set())
+
+  // Group orders by date and session
   const ordersByDate = orders?.reduce((acc, order) => {
     const date = new Date(order.createdAt).toLocaleDateString('en-US', {
       weekday: 'long',
@@ -26,6 +33,46 @@ export default function HistoryPage() {
     return acc
   }, {} as Record<string, typeof orders>)
 
+  // Group orders within each date into sessions based on order number resets
+  const sessionsByDate = Object.entries(ordersByDate || {}).reduce((acc, [date, dateOrders]) => {
+    const sessions: Session[] = []
+    let currentSession: NonNullable<typeof orders> = []
+    let sessionNumber = 1
+
+    // Sort orders by creation time
+    const sortedOrders = [...dateOrders].sort((a, b) =>
+      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    )
+
+    sortedOrders.forEach((order, index) => {
+      // Detect session reset: if order number is 1 or less than previous order number
+      if (index > 0 && order.orderNumber <= sortedOrders[index - 1].orderNumber) {
+        // Save current session and start new one
+        sessions.push({
+          sessionNumber,
+          orders: currentSession,
+          totalRevenue: currentSession.reduce((sum, o) => sum + o.total, 0),
+        })
+        sessionNumber++
+        currentSession = [order]
+      } else {
+        currentSession.push(order)
+      }
+    })
+
+    // Add the last session
+    if (currentSession.length > 0) {
+      sessions.push({
+        sessionNumber,
+        orders: currentSession,
+        totalRevenue: currentSession.reduce((sum, o) => sum + o.total, 0),
+      })
+    }
+
+    acc[date] = sessions
+    return acc
+  }, {} as Record<string, Session[]>)
+
   const toggleDate = (date: string) => {
     const newExpanded = new Set(expandedDates)
     if (newExpanded.has(date)) {
@@ -34,6 +81,16 @@ export default function HistoryPage() {
       newExpanded.add(date)
     }
     setExpandedDates(newExpanded)
+  }
+
+  const toggleSession = (dateSessionKey: string) => {
+    const newExpanded = new Set(expandedSessions)
+    if (newExpanded.has(dateSessionKey)) {
+      newExpanded.delete(dateSessionKey)
+    } else {
+      newExpanded.add(dateSessionKey)
+    }
+    setExpandedSessions(newExpanded)
   }
 
   const getStatusColor = (status: string) => {
@@ -60,9 +117,10 @@ export default function HistoryPage() {
         </div>
 
         <div className="space-y-4">
-          {ordersByDate && Object.entries(ordersByDate).map(([date, dateOrders]) => {
-            const isExpanded = expandedDates.has(date)
-            const totalRevenue = dateOrders.reduce((sum, order) => sum + order.total, 0)
+          {sessionsByDate && Object.entries(sessionsByDate).map(([date, sessions]) => {
+            const isDateExpanded = expandedDates.has(date)
+            const totalOrders = sessions.reduce((sum, session) => sum + session.orders.length, 0)
+            const totalRevenue = sessions.reduce((sum, session) => sum + session.totalRevenue, 0)
 
             return (
               <Card key={date}>
@@ -72,7 +130,7 @@ export default function HistoryPage() {
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      {isExpanded ? (
+                      {isDateExpanded ? (
                         <ChevronDown className="h-5 w-5 text-muted-foreground" />
                       ) : (
                         <ChevronRight className="h-5 w-5 text-muted-foreground" />
@@ -80,103 +138,141 @@ export default function HistoryPage() {
                       <div>
                         <CardTitle>{date}</CardTitle>
                         <CardDescription>
-                          {dateOrders.length} {dateOrders.length === 1 ? 'order' : 'orders'} •
+                          {totalOrders} {totalOrders === 1 ? 'order' : 'orders'} •
                           ${totalRevenue.toFixed(2)} total revenue
                         </CardDescription>
                       </div>
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      Click to {isExpanded ? 'collapse' : 'expand'}
+                      Click to {isDateExpanded ? 'collapse' : 'expand'}
                     </div>
                   </div>
                 </CardHeader>
 
-                {isExpanded && (
+                {isDateExpanded && (
                   <CardContent>
-                    <div className="space-y-3">
-                      {dateOrders.map((order) => (
-                        <div
-                          key={order.id}
-                          className="rounded-lg border bg-card p-4 hover:bg-muted/50 transition-colors"
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
-                                <div className="font-semibold text-lg">
-                                  Order #{order.orderNumber}
+                    <div className="space-y-4">
+                      {sessions.map((session) => {
+                        const sessionKey = `${date}-session-${session.sessionNumber}`
+                        const isSessionExpanded = expandedSessions.has(sessionKey)
+
+                        return (
+                          <div key={sessionKey} className="border rounded-lg">
+                            <div
+                              className="cursor-pointer hover:bg-muted/50 transition-colors p-4"
+                              onClick={() => toggleSession(sessionKey)}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  {isSessionExpanded ? (
+                                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                  ) : (
+                                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                  )}
+                                  <div>
+                                    <div className="font-semibold">Session {session.sessionNumber}</div>
+                                    <div className="text-sm text-muted-foreground">
+                                      {session.orders.length} {session.orders.length === 1 ? 'order' : 'orders'} •
+                                      ${session.totalRevenue.toFixed(2)}
+                                    </div>
+                                  </div>
                                 </div>
-                                <span
-                                  className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusColor(
-                                    order.status
-                                  )}`}
-                                >
-                                  {order.status}
-                                </span>
+                                <div className="text-sm text-muted-foreground">
+                                  Click to {isSessionExpanded ? 'collapse' : 'expand'}
+                                </div>
                               </div>
+                            </div>
 
-                              <div className="text-sm text-muted-foreground mb-3">
-                                {order.customerName && (
-                                  <span className="mr-3">Customer: {order.customerName}</span>
-                                )}
-                                <span className="mr-3">
-                                  {new Date(order.createdAt).toLocaleTimeString('en-US', {
-                                    hour: 'numeric',
-                                    minute: '2-digit',
-                                    timeZone: 'America/New_York',
-                                  })}
-                                </span>
-                                <span className="mr-3">{order.paymentMethod}</span>
-                                <span>{order.orderType.replace('_', ' ')}</span>
-                              </div>
-
-                              <div className="space-y-2">
-                                {order.items.map((item) => (
+                            {isSessionExpanded && (
+                              <div className="p-4 pt-0 space-y-3">
+                                {session.orders.map((order) => (
                                   <div
-                                    key={item.id}
-                                    className="flex items-start justify-between text-sm"
+                                    key={order.id}
+                                    className="rounded-lg border bg-card p-4 hover:bg-muted/50 transition-colors"
                                   >
-                                    <div className="flex-1">
-                                      <div className="font-medium">
-                                        {item.quantity}x {item.menuItem.name}
-                                      </div>
-                                      {item.customizations && item.customizations.length > 0 && (
-                                        <div className="text-xs text-muted-foreground mt-1">
-                                          {item.customizations.map((c) => (
-                                            <span key={c.id} className="mr-2">
-                                              • {c.name}
-                                              {c.price > 0 && ` (+$${c.price.toFixed(2)})`}
-                                            </span>
+                                    <div className="flex items-start justify-between">
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-3 mb-2">
+                                          <div className="font-semibold text-lg">
+                                            Order #{order.orderNumber}
+                                          </div>
+                                          <span
+                                            className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusColor(
+                                              order.status
+                                            )}`}
+                                          >
+                                            {order.status}
+                                          </span>
+                                        </div>
+
+                                        <div className="text-sm text-muted-foreground mb-3">
+                                          {order.customerName && (
+                                            <span className="mr-3">Customer: {order.customerName}</span>
+                                          )}
+                                          <span className="mr-3">
+                                            {new Date(order.createdAt).toLocaleTimeString('en-US', {
+                                              hour: 'numeric',
+                                              minute: '2-digit',
+                                              timeZone: 'America/New_York',
+                                            })}
+                                          </span>
+                                          <span className="mr-3">{order.paymentMethod}</span>
+                                          <span>{order.orderType.replace('_', ' ')}</span>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                          {order.items.map((item) => (
+                                            <div
+                                              key={item.id}
+                                              className="flex items-start justify-between text-sm"
+                                            >
+                                              <div className="flex-1">
+                                                <div className="font-medium">
+                                                  {item.quantity}x {item.menuItemName}
+                                                </div>
+                                                {item.customizations && item.customizations.length > 0 && (
+                                                  <div className="text-xs text-muted-foreground mt-1">
+                                                    {item.customizations.map((c) => (
+                                                      <span key={c.id} className="mr-2">
+                                                        • {c.name}
+                                                        {c.price > 0 && ` (+$${c.price.toFixed(2)})`}
+                                                      </span>
+                                                    ))}
+                                                  </div>
+                                                )}
+                                              </div>
+                                              <div className="font-medium">
+                                                ${(item.price * item.quantity).toFixed(2)}
+                                              </div>
+                                            </div>
                                           ))}
                                         </div>
-                                      )}
-                                    </div>
-                                    <div className="font-medium">
-                                      ${(item.price * item.quantity).toFixed(2)}
+                                      </div>
+
+                                      <div className="ml-6 text-right">
+                                        <div className="space-y-1">
+                                          <div className="text-xs text-muted-foreground">
+                                            Subtotal: ${order.subtotal.toFixed(2)}
+                                          </div>
+                                          {order.tax > 0 && (
+                                            <div className="text-xs text-muted-foreground">
+                                              Processing Fee: ${order.tax.toFixed(2)}
+                                            </div>
+                                          )}
+                                          <div className="text-sm text-muted-foreground mb-1">Total</div>
+                                          <div className="text-2xl font-bold text-primary">
+                                            ${order.total.toFixed(2)}
+                                          </div>
+                                        </div>
+                                      </div>
                                     </div>
                                   </div>
                                 ))}
                               </div>
-                            </div>
-
-                            <div className="ml-6 text-right">
-                              <div className="space-y-1">
-                                <div className="text-xs text-muted-foreground">
-                                  Subtotal: ${order.subtotal.toFixed(2)}
-                                </div>
-                                {order.tax > 0 && (
-                                  <div className="text-xs text-muted-foreground">
-                                    Processing Fee: ${order.tax.toFixed(2)}
-                                  </div>
-                                )}
-                                <div className="text-sm text-muted-foreground mb-1">Total</div>
-                                <div className="text-2xl font-bold text-primary">
-                                  ${order.total.toFixed(2)}
-                                </div>
-                              </div>
-                            </div>
+                            )}
                           </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   </CardContent>
                 )}
@@ -184,7 +280,7 @@ export default function HistoryPage() {
             )
           })}
 
-          {(!ordersByDate || Object.keys(ordersByDate).length === 0) && (
+          {(!sessionsByDate || Object.keys(sessionsByDate).length === 0) && (
             <Card>
               <CardContent className="flex h-64 items-center justify-center">
                 <div className="text-center text-muted-foreground">

@@ -152,3 +152,45 @@ model ItemCustomization {
   price       Float     @default(0) // Additional price for this customization
   createdAt   DateTime  @default(now())
 }
+
+// Order History - archived orders from previous sessions
+model OrderHistory {
+  id                String                  @id @default(cuid())
+  orderNumber       Int
+  customerId        String?
+  customerName      String?
+  items             OrderHistoryItem[]
+  status            OrderStatus
+  paymentMethod     PaymentMethod
+  paymentId         String?
+  terminalCheckoutId String?
+  subtotal          Float
+  tax               Float
+  total             Float
+  orderType         OrderType
+  createdAt         DateTime
+  updatedAt         DateTime
+  completedAt       DateTime?
+  archivedAt        DateTime              @default(now())
+}
+
+model OrderHistoryItem {
+  id              String                      @id @default(cuid())
+  orderHistoryId  String
+  orderHistory    OrderHistory                @relation(fields: [orderHistoryId], references: [id], onDelete: Cascade)
+  menuItemName    String                      // Store name since menu items might change
+  quantity        Int
+  price           Float
+  customizations  OrderHistoryCustomization[]
+  createdAt       DateTime
+}
+
+model OrderHistoryCustomization {
+  id                   String           @id @default(cuid())
+  orderHistoryItemId   String
+  orderHistoryItem     OrderHistoryItem @relation(fields: [orderHistoryItemId], references: [id], onDelete: Cascade)
+  type                 String
+  name                 String
+  price                Float
+  createdAt            DateTime
+}
