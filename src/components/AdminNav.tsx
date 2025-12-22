@@ -13,15 +13,16 @@ export default function AdminNav() {
   return (
     <div className="border-b bg-background">
       <div className="mx-auto max-w-7xl">
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-2 p-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant={pathname === '/admin' ? 'default' : 'outline'}
               size="sm"
               onClick={() => router.push('/admin')}
             >
               <LayoutDashboard className="mr-2 h-4 w-4" />
-              Dashboard
+              <span className="hidden sm:inline">Dashboard</span>
+              <span className="sm:hidden">Dash</span>
             </Button>
             <Button
               variant={pathname === '/admin/history' ? 'default' : 'outline'}
@@ -43,7 +44,7 @@ export default function AdminNav() {
             )}
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant={pathname === '/cashier' ? 'default' : 'outline'}
               size="sm"
@@ -60,12 +61,12 @@ export default function AdminNav() {
               <ChefHat className="mr-2 h-4 w-4" />
               Kitchen
             </Button>
-            <div className="text-sm text-muted-foreground">
+            <div className="hidden text-sm text-muted-foreground md:block">
               Logged in as: {session?.user?.name}
             </div>
             <Button variant="outline" size="sm" onClick={() => signOut({ callbackUrl: '/auth/signin' })}>
               <LogOut className="mr-2 h-4 w-4" />
-              Logout
+              <span className="hidden sm:inline">Logout</span>
             </Button>
           </div>
         </div>
