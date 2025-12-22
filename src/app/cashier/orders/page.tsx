@@ -206,23 +206,25 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="min-h-screen bg-background p-3 md:p-6">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="mb-4 md:mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
             <Button variant="outline" size="sm" onClick={() => router.push('/cashier')} className="active:scale-95 transition-transform">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Cashier
+              <span className="hidden sm:inline">Back to Cashier</span>
+              <span className="sm:hidden">Back</span>
             </Button>
-            <h1 className="text-3xl font-bold text-primary">Order Management</h1>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-primary">Order Management</h1>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="text-sm text-muted-foreground">
-              Logged in as: {session?.user?.name}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+            <div className="text-xs sm:text-sm text-muted-foreground">
+              <span className="hidden sm:inline">Logged in as: </span>
+              {session?.user?.name}
             </div>
             <Button variant="outline" size="sm" onClick={() => signOut({ callbackUrl: '/auth/signin' })} className="active:scale-95 transition-transform">
               <LogOut className="mr-2 h-4 w-4" />
-              Logout
+              <span className="hidden sm:inline">Logout</span>
             </Button>
           </div>
         </div>
@@ -241,10 +243,10 @@ export default function OrdersPage() {
               orders?.map((order) => (
               <Card key={order.id}>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex-1 min-w-0">
                       {editingOrderNumber === order.id ? (
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <span className="text-sm font-medium">Order #</span>
                           <input
                             type="number"
@@ -270,8 +272,8 @@ export default function OrdersPage() {
                           </Button>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2">
-                          <CardTitle>Order #{order.orderNumber}</CardTitle>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <CardTitle className="text-lg sm:text-xl">Order #{order.orderNumber}</CardTitle>
                           {editingOrderId !== order.id && (
                             <Button
                               size="sm"
@@ -284,14 +286,14 @@ export default function OrdersPage() {
                           )}
                         </div>
                       )}
-                      <CardDescription>
+                      <CardDescription className="text-xs sm:text-sm break-words">
                         {formatTime(order.createdAt)}
                         {order.customerName && ` • ${order.customerName}`}
                       </CardDescription>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <div
-                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                        className={`rounded-full px-2 sm:px-3 py-1 text-xs font-semibold whitespace-nowrap ${
                           order.status === 'PENDING'
                             ? 'bg-orange-200 text-orange-800'
                             : order.status === 'PREPARING'
@@ -328,35 +330,35 @@ export default function OrdersPage() {
                         <h3 className="font-semibold">Order Items</h3>
                         {editCart.map((item) => (
                           <div key={item.id} className="space-y-2 border rounded p-3">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <div className="font-medium">{item.name}</div>
-                                <div className="text-sm text-muted-foreground">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium break-words">{item.name}</div>
+                                <div className="text-xs sm:text-sm text-muted-foreground">
                                   ${item.price.toFixed(2)} x {item.quantity}
                                 </div>
                                 {item.customizations.length > 0 && (
-                                  <div className="text-xs text-muted-foreground">
+                                  <div className="text-xs text-muted-foreground break-words">
                                     {item.customizations.map((c) => c.price ? `${c.name} (+$${c.price.toFixed(2)})` : c.name).join(', ')}
                                   </div>
                                 )}
                               </div>
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-shrink-0">
                                 <Button
                                   size="icon"
                                   variant="outline"
                                   onClick={() => removeFromCart(item.id)}
-                                  className="active:scale-95 transition-transform"
+                                  className="active:scale-95 transition-transform h-8 w-8"
                                 >
                                   <Minus className="h-4 w-4" />
                                 </Button>
-                                <span className="w-8 text-center">{item.quantity}</span>
+                                <span className="w-8 text-center text-sm">{item.quantity}</span>
                                 <Button
                                   size="icon"
                                   variant="outline"
                                   onClick={() => setEditCart(editCart.map((i) =>
                                     i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
                                   ))}
-                                  className="active:scale-95 transition-transform"
+                                  className="active:scale-95 transition-transform h-8 w-8"
                                 >
                                   <Plus className="h-4 w-4" />
                                 </Button>
@@ -364,7 +366,7 @@ export default function OrdersPage() {
                                   size="icon"
                                   variant="destructive"
                                   onClick={() => setEditCart(editCart.filter(i => i.id !== item.id))}
-                                  className="active:scale-95 transition-transform"
+                                  className="active:scale-95 transition-transform h-8 w-8"
                                 >
                                   <X className="h-4 w-4" />
                                 </Button>
@@ -374,7 +376,7 @@ export default function OrdersPage() {
                             {selectedItem === item.id && getCustomizations(item.id).length > 0 && (
                               <div className="space-y-2">
                                 <div className="text-xs font-medium">Customizations:</div>
-                                <div className="grid grid-cols-2 gap-1">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
                                   {getCustomizations(item.id).map((custom: any) => {
                                     const isSelected = item.customizations.some(
                                       c => c.type === custom.type && c.name === custom.name
@@ -385,7 +387,7 @@ export default function OrdersPage() {
                                         size="sm"
                                         variant={isSelected ? "default" : "outline"}
                                         onClick={() => addCustomization(item.id, { type: custom.type, name: custom.name, price: custom.price })}
-                                        className="text-xs active:scale-95 transition-transform"
+                                        className="text-xs active:scale-95 transition-transform break-words whitespace-normal h-auto py-2"
                                       >
                                         {custom.name}{custom.price > 0 && ` (+$${custom.price.toFixed(2)})`}
                                       </Button>
@@ -442,34 +444,34 @@ export default function OrdersPage() {
                       {/* Add Items */}
                       <div className="space-y-2">
                         <h3 className="font-semibold">Add Items</h3>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           {menuItems?.map((item) => (
                             <Button
                               key={item.id}
                               variant="outline"
                               onClick={() => addToCart(item)}
-                              className="justify-start active:scale-95 transition-transform"
+                              className="justify-start active:scale-95 transition-transform text-left break-words whitespace-normal h-auto py-2"
                             >
-                              <Plus className="mr-2 h-4 w-4" />
-                              {item.name} (${item.price.toFixed(2)})
+                              <Plus className="mr-2 h-4 w-4 flex-shrink-0" />
+                              <span className="break-words">{item.name} (${item.price.toFixed(2)})</span>
                             </Button>
                           ))}
                         </div>
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="flex gap-2 pt-4 border-t">
+                      <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t">
                         <Button
                           onClick={() => handleSaveEdit(order.id)}
                           disabled={editOrder.isPending || editCart.length === 0}
-                          className="active:scale-95 transition-transform"
+                          className="active:scale-95 transition-transform flex-1 sm:flex-initial"
                         >
                           Save Changes
                         </Button>
                         <Button
                           variant="outline"
                           onClick={handleCancelEdit}
-                          className="active:scale-95 transition-transform"
+                          className="active:scale-95 transition-transform flex-1 sm:flex-initial"
                         >
                           Cancel
                         </Button>
@@ -480,14 +482,14 @@ export default function OrdersPage() {
                       {/* View Mode */}
                       <div className="space-y-2">
                         {order.items.map((item) => (
-                          <div key={item.id} className="flex items-center justify-between border-b pb-2">
-                            <div>
-                              <div className="font-medium">{item.menuItem.name}</div>
-                              <div className="text-sm text-muted-foreground">
+                          <div key={item.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b pb-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium break-words">{item.menuItem.name}</div>
+                              <div className="text-xs sm:text-sm text-muted-foreground">
                                 ${item.price.toFixed(2)} x {item.quantity} = ${(item.price * item.quantity).toFixed(2)}
                               </div>
                               {item.customizations && item.customizations.length > 0 && (
-                                <div className="text-xs text-muted-foreground">
+                                <div className="text-xs text-muted-foreground break-words">
                                   {item.customizations.map((c) => c.name).join(', ')}
                                 </div>
                               )}
@@ -513,11 +515,11 @@ export default function OrdersPage() {
                           <span>{order.paymentMethod}</span>
                         </div>
                       </div>
-                      <div className="mt-4 flex gap-2">
+                      <div className="mt-4 flex flex-col sm:flex-row gap-2">
                         <Button
                           variant="outline"
                           onClick={() => handleStartEdit(order)}
-                          className="active:scale-95 transition-transform"
+                          className="active:scale-95 transition-transform flex-1 sm:flex-initial"
                         >
                           <Edit className="mr-2 h-4 w-4" />
                           Edit Order
@@ -527,7 +529,7 @@ export default function OrdersPage() {
                             variant="destructive"
                             onClick={() => handleCancelOrder(order.id)}
                             disabled={updateStatus.isPending}
-                            className="active:scale-95 transition-transform"
+                            className="active:scale-95 transition-transform flex-1 sm:flex-initial"
                           >
                             Cancel Order
                           </Button>
@@ -555,22 +557,22 @@ export default function OrdersPage() {
               {orderHistory.map((order) => (
                 <Card key={order.id} className="opacity-75">
                   <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="flex items-center gap-2">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="flex flex-wrap items-center gap-2 text-lg sm:text-xl">
                           Order #{order.orderNumber}
-                          <span className="text-xs font-normal px-2 py-1 rounded bg-gray-200 text-gray-700">
+                          <span className="text-xs font-normal px-2 py-1 rounded bg-gray-200 text-gray-700 whitespace-nowrap">
                             ARCHIVED
                           </span>
                         </CardTitle>
-                        <CardDescription>
+                        <CardDescription className="text-xs sm:text-sm break-words">
                           {formatTime(order.createdAt)}
                           {order.customerName && ` • ${order.customerName}`}
                         </CardDescription>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-shrink-0">
                         <div
-                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                          className={`rounded-full px-2 sm:px-3 py-1 text-xs font-semibold whitespace-nowrap ${
                             order.status === 'PENDING'
                               ? 'bg-orange-200 text-orange-800'
                               : order.status === 'PREPARING'
@@ -590,14 +592,14 @@ export default function OrdersPage() {
                   <CardContent>
                     <div className="space-y-2">
                       {order.items.map((item) => (
-                        <div key={item.id} className="flex items-center justify-between border-b pb-2">
-                          <div>
-                            <div className="font-medium">{item.menuItemName}</div>
-                            <div className="text-sm text-muted-foreground">
+                        <div key={item.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b pb-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium break-words">{item.menuItemName}</div>
+                            <div className="text-xs sm:text-sm text-muted-foreground">
                               ${item.price.toFixed(2)} x {item.quantity} = ${(item.price * item.quantity).toFixed(2)}
                             </div>
                             {item.customizations && item.customizations.length > 0 && (
-                              <div className="text-xs text-muted-foreground">
+                              <div className="text-xs text-muted-foreground break-words">
                                 {item.customizations.map((c) => c.name).join(', ')}
                               </div>
                             )}

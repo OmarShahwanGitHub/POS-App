@@ -146,7 +146,7 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="min-h-screen bg-background p-3 md:p-6">
       <div className="mx-auto max-w-7xl">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-primary">Order History</h1>
@@ -169,16 +169,16 @@ export default function HistoryPage() {
                   className="cursor-pointer hover:bg-muted/50 transition-colors"
                   onClick={() => toggleDate(date)}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
                       {isDateExpanded ? (
-                        <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                        <ChevronDown className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                       ) : (
-                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                        <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                       )}
-                      <div>
-                        <CardTitle>{date}</CardTitle>
-                        <CardDescription>
+                      <div className="min-w-0 flex-1">
+                        <CardTitle className="break-words">{date}</CardTitle>
+                        <CardDescription className="break-words text-xs sm:text-sm">
                           {totalOrders} {totalOrders === 1 ? 'order' : 'orders'} •
                           ${totalRevenue.toFixed(2)} total
                           {isSingleSession && singleSession ? (
@@ -199,7 +199,7 @@ export default function HistoryPage() {
                         </CardDescription>
                       </div>
                     </div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-xs sm:text-sm text-muted-foreground flex-shrink-0">
                       Click to {isDateExpanded ? 'collapse' : 'expand'}
                     </div>
                   </div>
@@ -222,14 +222,14 @@ export default function HistoryPage() {
                                     key={order.id}
                                     className="rounded-lg border bg-card p-4 hover:bg-muted/50 transition-colors"
                                   >
-                                    <div className="flex items-start justify-between">
-                                      <div className="flex-1">
-                                        <div className="flex items-center gap-3 mb-2">
-                                          <div className="font-semibold text-lg">
+                                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                                          <div className="font-semibold text-base sm:text-lg">
                                             Order #{order.orderNumber}
                                           </div>
                                           <span
-                                            className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusColor(
+                                            className={`rounded-full px-2 py-1 text-xs font-semibold whitespace-nowrap ${getStatusColor(
                                               order.status
                                             )}`}
                                           >
@@ -237,18 +237,18 @@ export default function HistoryPage() {
                                           </span>
                                         </div>
 
-                                        <div className="text-sm text-muted-foreground mb-3">
+                                        <div className="text-xs sm:text-sm text-muted-foreground mb-3 flex flex-wrap gap-x-3 gap-y-1">
                                           {order.customerName && (
-                                            <span className="mr-3">Customer: {order.customerName}</span>
+                                            <span>Customer: {order.customerName}</span>
                                           )}
-                                          <span className="mr-3">
+                                          <span>
                                             {new Date(order.createdAt).toLocaleTimeString('en-US', {
                                               hour: 'numeric',
                                               minute: '2-digit',
                                               timeZone: 'America/New_York',
                                             })}
                                           </span>
-                                          <span className="mr-3">{order.paymentMethod}</span>
+                                          <span>{order.paymentMethod}</span>
                                           <span>{order.orderType.replace('_', ' ')}</span>
                                         </div>
 
@@ -256,16 +256,16 @@ export default function HistoryPage() {
                                           {order.items.map((item) => (
                                             <div
                                               key={item.id}
-                                              className="flex items-start justify-between text-sm"
+                                              className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-2 text-sm"
                                             >
-                                              <div className="flex-1">
-                                                <div className="font-medium">
+                                              <div className="flex-1 min-w-0">
+                                                <div className="font-medium break-words">
                                                   {item.quantity}x {item.menuItemName}
                                                 </div>
                                                 {item.customizations && item.customizations.length > 0 && (
-                                                  <div className="text-xs text-muted-foreground mt-1">
+                                                  <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-x-2">
                                                     {item.customizations.map((c) => (
-                                                      <span key={c.id} className="mr-2">
+                                                      <span key={c.id}>
                                                         • {c.name}
                                                         {c.price > 0 && ` (+$${c.price.toFixed(2)})`}
                                                       </span>
@@ -273,7 +273,7 @@ export default function HistoryPage() {
                                                   </div>
                                                 )}
                                               </div>
-                                              <div className="font-medium">
+                                              <div className="font-medium whitespace-nowrap">
                                                 ${(item.price * item.quantity).toFixed(2)}
                                               </div>
                                             </div>
@@ -281,7 +281,7 @@ export default function HistoryPage() {
                                         </div>
                                       </div>
 
-                                      <div className="ml-6 text-right">
+                                      <div className="sm:ml-6 text-left sm:text-right flex-shrink-0">
                                         <div className="space-y-1">
                                           <div className="text-xs text-muted-foreground">
                                             Subtotal: ${order.subtotal.toFixed(2)}
@@ -292,7 +292,7 @@ export default function HistoryPage() {
                                             </div>
                                           )}
                                           <div className="text-sm text-muted-foreground mb-1">Total</div>
-                                          <div className="text-2xl font-bold text-primary">
+                                          <div className="text-xl sm:text-2xl font-bold text-primary">
                                             ${order.total.toFixed(2)}
                                           </div>
                                         </div>
@@ -311,16 +311,16 @@ export default function HistoryPage() {
                               className="cursor-pointer hover:bg-muted/50 transition-colors p-4"
                               onClick={() => toggleSession(sessionKey)}
                             >
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
+                              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
                                   {isSessionExpanded ? (
-                                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                    <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                                   ) : (
-                                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                    <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                                   )}
-                                  <div>
+                                  <div className="min-w-0 flex-1">
                                     <div className="font-semibold">Session {session.sessionNumber}</div>
-                                    <div className="text-sm text-muted-foreground">
+                                    <div className="text-xs sm:text-sm text-muted-foreground break-words">
                                       {session.orders.length} {session.orders.length === 1 ? 'order' : 'orders'} •
                                       ${session.totalRevenue.toFixed(2)} total
                                       {' • '}
@@ -330,7 +330,7 @@ export default function HistoryPage() {
                                     </div>
                                   </div>
                                 </div>
-                                <div className="text-sm text-muted-foreground">
+                                <div className="text-xs sm:text-sm text-muted-foreground flex-shrink-0">
                                   Click to {isSessionExpanded ? 'collapse' : 'expand'}
                                 </div>
                               </div>
@@ -343,14 +343,14 @@ export default function HistoryPage() {
                                     key={order.id}
                                     className="rounded-lg border bg-card p-4 hover:bg-muted/50 transition-colors"
                                   >
-                                    <div className="flex items-start justify-between">
-                                      <div className="flex-1">
-                                        <div className="flex items-center gap-3 mb-2">
-                                          <div className="font-semibold text-lg">
+                                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                                          <div className="font-semibold text-base sm:text-lg">
                                             Order #{order.orderNumber}
                                           </div>
                                           <span
-                                            className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusColor(
+                                            className={`rounded-full px-2 py-1 text-xs font-semibold whitespace-nowrap ${getStatusColor(
                                               order.status
                                             )}`}
                                           >
@@ -358,18 +358,18 @@ export default function HistoryPage() {
                                           </span>
                                         </div>
 
-                                        <div className="text-sm text-muted-foreground mb-3">
+                                        <div className="text-xs sm:text-sm text-muted-foreground mb-3 flex flex-wrap gap-x-3 gap-y-1">
                                           {order.customerName && (
-                                            <span className="mr-3">Customer: {order.customerName}</span>
+                                            <span>Customer: {order.customerName}</span>
                                           )}
-                                          <span className="mr-3">
+                                          <span>
                                             {new Date(order.createdAt).toLocaleTimeString('en-US', {
                                               hour: 'numeric',
                                               minute: '2-digit',
                                               timeZone: 'America/New_York',
                                             })}
                                           </span>
-                                          <span className="mr-3">{order.paymentMethod}</span>
+                                          <span>{order.paymentMethod}</span>
                                           <span>{order.orderType.replace('_', ' ')}</span>
                                         </div>
 
@@ -377,16 +377,16 @@ export default function HistoryPage() {
                                           {order.items.map((item) => (
                                             <div
                                               key={item.id}
-                                              className="flex items-start justify-between text-sm"
+                                              className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-2 text-sm"
                                             >
-                                              <div className="flex-1">
-                                                <div className="font-medium">
+                                              <div className="flex-1 min-w-0">
+                                                <div className="font-medium break-words">
                                                   {item.quantity}x {item.menuItemName}
                                                 </div>
                                                 {item.customizations && item.customizations.length > 0 && (
-                                                  <div className="text-xs text-muted-foreground mt-1">
+                                                  <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-x-2">
                                                     {item.customizations.map((c) => (
-                                                      <span key={c.id} className="mr-2">
+                                                      <span key={c.id}>
                                                         • {c.name}
                                                         {c.price > 0 && ` (+$${c.price.toFixed(2)})`}
                                                       </span>
@@ -394,7 +394,7 @@ export default function HistoryPage() {
                                                   </div>
                                                 )}
                                               </div>
-                                              <div className="font-medium">
+                                              <div className="font-medium whitespace-nowrap">
                                                 ${(item.price * item.quantity).toFixed(2)}
                                               </div>
                                             </div>
@@ -402,7 +402,7 @@ export default function HistoryPage() {
                                         </div>
                                       </div>
 
-                                      <div className="ml-6 text-right">
+                                      <div className="sm:ml-6 text-left sm:text-right flex-shrink-0">
                                         <div className="space-y-1">
                                           <div className="text-xs text-muted-foreground">
                                             Subtotal: ${order.subtotal.toFixed(2)}
@@ -413,7 +413,7 @@ export default function HistoryPage() {
                                             </div>
                                           )}
                                           <div className="text-sm text-muted-foreground mb-1">Total</div>
-                                          <div className="text-2xl font-bold text-primary">
+                                          <div className="text-xl sm:text-2xl font-bold text-primary">
                                             ${order.total.toFixed(2)}
                                           </div>
                                         </div>

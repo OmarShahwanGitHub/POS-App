@@ -259,14 +259,8 @@ export const orderRouter = router({
         timestamp: new Date(),
       })
 
-      // Also emit updated event
-      orderEvents.emit('order.updated', {
-        type: 'order.updated',
-        orderId: order.id,
-        orderNumber: order.orderNumber,
-        status: order.status,
-        timestamp: new Date(),
-      })
+      // Don't emit order.updated for status changes - only emit for actual edits
+      // This prevents false "order edited" notifications when status changes
 
       return order
     }),
