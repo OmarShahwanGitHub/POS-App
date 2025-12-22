@@ -2,13 +2,16 @@
 
 import { useState } from 'react'
 import { trpc } from '@/lib/trpc'
+import type { RouterOutputs } from '@/server/routers/_app'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
+type OrderHistoryItem = RouterOutputs['order']['getOrderHistory'][number]
+
 type Session = {
   sessionNumber: number
-  orders: NonNullable<typeof orders>
+  orders: OrderHistoryItem[]
   totalRevenue: number
 }
 
@@ -31,12 +34,12 @@ export default function HistoryPage() {
     }
     acc[date].push(order)
     return acc
-  }, {} as Record<string, typeof orders>)
+  }, {} as Record<string, OrderHistoryItem[]>)
 
   // Group orders within each date into sessions based on order number resets
   const sessionsByDate = Object.entries(ordersByDate || {}).reduce((acc, [date, dateOrders]) => {
     const sessions: Session[] = []
-    let currentSession: NonNullable<typeof orders> = []
+    let currentSession: OrderHistoryItem[] = []
     let sessionNumber = 1
 
     // Sort orders by creation time

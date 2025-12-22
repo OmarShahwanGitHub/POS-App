@@ -5,7 +5,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { trpc } from '@/lib/trpc'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { ShoppingCart, Plus, Minus, DollarSign, CreditCard, LogOut, ClipboardList, RotateCcw } from 'lucide-react'
+import { ShoppingCart, Plus, Minus, DollarSign, CreditCard, LogOut, ClipboardList, RotateCcw, Beef } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import AdminNav from '@/components/AdminNav'
 
@@ -40,6 +40,63 @@ export default function CashierPage() {
   )
   const [processingTerminalPayment, setProcessingTerminalPayment] = useState(false)
   const [currentOrderId, setCurrentOrderId] = useState<string | null>(null)
+  const [initialPattyCount, setInitialPattyCount] = useState<number | null>(null)
+  const [showPattyInput, setShowPattyInput] = useState(false)
+
+  // Load patty count from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('pattyCount')
+    if (stored) {
+      const parsed = parseInt(stored, 10)
+      if (!isNaN(parsed) && parsed >= 0) {
+        setInitialPattyCount(parsed)
+      }
+    }
+  }, [])
+
+  // Calculate patties used from cart (for display purposes)
+  const calculatePattiesInCart = () => {
+    return cart.reduce((total, item) => {
+      const itemName = item.name.toUpperCase()
+      let pattiesPerItem = 0
+      
+      if (itemName.includes('SINGLE')) {
+        pattiesPerItem = 1
+      } else if (itemName.includes('DOUBLE') || itemName.includes('DBL')) {
+        pattiesPerItem = 2
+      }
+      
+      return total + (pattiesPerItem * item.quantity)
+    }, 0)
+  }
+
+  // Calculate patties used from an order's items
+  const calculatePattiesFromItems = (items: { name: string; quantity: number }[]) => {
+    return items.reduce((total, item) => {
+      const itemName = item.name.toUpperCase()
+      let pattiesPerItem = 0
+      
+      if (itemName.includes('SINGLE')) {
+        pattiesPerItem = 1
+      } else if (itemName.includes('DOUBLE') || itemName.includes('DBL')) {
+        pattiesPerItem = 2
+      }
+      
+      return total + (pattiesPerItem * item.quantity)
+    }, 0)
+  }
+
+  const pattiesInCart = calculatePattiesInCart()
+  // initialPattyCount represents remaining patties (gets decremented as orders are created)
+  // Display shows remaining minus what's in current cart
+  const pattiesRemaining = initialPattyCount !== null ? Math.max(0, initialPattyCount - pattiesInCart) : null
+
+  // Save patty count to localStorage when it changes
+  useEffect(() => {
+    if (initialPattyCount !== null) {
+      localStorage.setItem('pattyCount', initialPattyCount.toString())
+    }
+  }, [initialPattyCount])
 
   const addToCart = (item: any) => {
     // Always create a new cart entry to allow different customizations
@@ -122,16 +179,25 @@ export default function CashierPage() {
       setProcessingTerminalPayment(true)
 
       // Step 1: Create the order
+      const orderItems = cart.map((item) => ({
+        menuItemId: item.menuItemId,
+        quantity: item.quantity,
+        customizations: item.customizations.length > 0 ? item.customizations : undefined,
+      }))
+      
       const order = await createOrder.mutateAsync({
-        items: cart.map((item) => ({
-          menuItemId: item.menuItemId,
-          quantity: item.quantity,
-          customizations: item.customizations.length > 0 ? item.customizations : undefined,
-        })),
+        items: orderItems,
         paymentMethod: 'SQUARE',
         orderType: 'IN_STORE',
         customerName: customerName || undefined,
       })
+
+      // Deduct patties from counter
+      if (initialPattyCount !== null) {
+        const pattiesUsed = calculatePattiesFromItems(cart.map(item => ({ name: item.name, quantity: item.quantity })))
+        const newCount = Math.max(0, initialPattyCount - pattiesUsed)
+        setInitialPattyCount(newCount)
+      }
 
       setCurrentOrderId(order.id)
 
@@ -164,16 +230,25 @@ export default function CashierPage() {
     processingOrderRef.current = true
 
     try {
+      const orderItems = cart.map((item) => ({
+        menuItemId: item.menuItemId,
+        quantity: item.quantity,
+        customizations: item.customizations.length > 0 ? item.customizations : undefined,
+      }))
+      
       await createOrder.mutateAsync({
-        items: cart.map((item) => ({
-          menuItemId: item.menuItemId,
-          quantity: item.quantity,
-          customizations: item.customizations.length > 0 ? item.customizations : undefined,
-        })),
+        items: orderItems,
         paymentMethod: 'CASH',
         orderType: 'IN_STORE',
         customerName: customerName || undefined,
       })
+
+      // Deduct patties from counter
+      if (initialPattyCount !== null) {
+        const pattiesUsed = calculatePattiesFromItems(cart.map(item => ({ name: item.name, quantity: item.quantity })))
+        const newCount = Math.max(0, initialPattyCount - pattiesUsed)
+        setInitialPattyCount(newCount)
+      }
 
       // Reset everything
       setCart([])
@@ -252,9 +327,25 @@ export default function CashierPage() {
 
     try {
       const result = await startNewSession.mutateAsync()
+      // Reset patty counter
+      setInitialPattyCount(null)
+      localStorage.removeItem('pattyCount')
       alert(`New session started! ${result.ordersArchived} orders archived to history.`)
     } catch (error) {
       alert('Failed to start new session')
+    }
+  }
+
+  const handleSetPattyCount = () => {
+    const input = prompt('Enter initial patty count for this session:')
+    if (input !== null) {
+      const count = parseInt(input, 10)
+      if (!isNaN(count) && count >= 0) {
+        setInitialPattyCount(count)
+        setShowPattyInput(false)
+      } else {
+        alert('Please enter a valid number')
+      }
     }
   }
 
@@ -302,6 +393,42 @@ export default function CashierPage() {
                 </>
               )}
             </div>
+          </div>
+
+          {/* Patty Counter */}
+          <div className="mb-4">
+            <Card className={pattiesRemaining !== null && pattiesRemaining < 10 ? 'border-orange-500 bg-orange-50 dark:bg-orange-950' : ''}>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Beef className={`h-6 w-6 ${pattiesRemaining !== null && pattiesRemaining < 10 ? 'text-orange-600' : 'text-primary'}`} />
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground">Patties Remaining</div>
+                      {initialPattyCount !== null ? (
+                        <div className={`text-2xl font-bold ${pattiesRemaining !== null && pattiesRemaining < 10 ? 'text-orange-600' : 'text-primary'}`}>
+                          {pattiesRemaining}
+                          {pattiesInCart > 0 && (
+                            <span className="text-sm font-normal text-muted-foreground ml-2">
+                              (in cart: {pattiesInCart})
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-muted-foreground">Not set</div>
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    variant={initialPattyCount !== null ? "outline" : "default"}
+                    size="sm"
+                    onClick={handleSetPattyCount}
+                    className="active:scale-95 transition-transform"
+                  >
+                    {initialPattyCount !== null ? 'Update' : 'Set Count'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
         <div className="flex flex-col gap-6 md:grid md:grid-cols-3">
