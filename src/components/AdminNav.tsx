@@ -31,6 +31,16 @@ export default function AdminNav() {
               <History className="mr-2 h-4 w-4" />
               History
             </Button>
+            {session?.user?.role === 'SUPERADMIN' && (
+              <Button
+                variant={pathname === '/admin/users' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => router.push('/admin/users')}
+              >
+                <Users className="mr-2 h-4 w-4" />
+                Users
+              </Button>
+            )}
           </div>
 
           <div className="flex items-center gap-4">

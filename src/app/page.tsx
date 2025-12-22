@@ -28,6 +28,7 @@ export default function Home() {
         router.push('/order')
         break
       case 'ADMIN':
+      case 'SUPERADMIN':
         router.push('/admin')
         break
       default:

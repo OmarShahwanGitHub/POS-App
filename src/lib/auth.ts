@@ -37,6 +37,13 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Invalid credentials')
         }
 
+        // Block USER role from signing in (they need admin approval)
+        if (user.role === 'USER') {
+          throw new Error('Account pending approval. Please contact an administrator.')
+        }
+
+        // Allow SUPERADMIN to sign in (same as ADMIN)
+
         return {
           id: user.id,
           email: user.email,

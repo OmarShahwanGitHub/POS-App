@@ -63,7 +63,21 @@ async function main() {
     },
   })
 
-  console.log('✅ Created users:', { cashier, kitchen, customer, admin })
+  // Create superadmin account
+  const superadmin = await prisma.user.upsert({
+    where: { email: 'superadmin@brigado.com' },
+    update: {
+      role: 'SUPERADMIN', // Ensure role is set correctly
+    },
+    create: {
+      email: 'superadmin@brigado.com',
+      password: hashedPassword,
+      name: 'Super Admin',
+      role: 'SUPERADMIN',
+    },
+  })
+
+  console.log('✅ Created users:', { cashier, kitchen, customer, admin, superadmin })
 
   // Create menu items
   const singleBurger = await prisma.menuItem.upsert({
@@ -109,10 +123,12 @@ async function main() {
 
   console.log('🎉 Seed completed successfully!')
   console.log('\n📋 Demo Accounts:')
+  console.log('Superadmin: superadmin@brigado.com / password123')
+  console.log('Admin: admin@brigado.com / password123')
   console.log('Cashier: cashier@brigado.com / password123')
   console.log('Kitchen: kitchen@brigado.com / password123')
   console.log('Customer: customer@brigado.com / password123')
-  console.log('Admin: admin@brigado.com / password123')
+  console.log('\n⚠️  Change these passwords in production via the Users page!')
 }
 
 main()

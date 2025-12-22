@@ -49,6 +49,7 @@ const hasRole = (roles: string[]) =>
   })
 
 export const protectedProcedure = t.procedure.use(isAuthed)
-export const cashierProcedure = t.procedure.use(hasRole(['CASHIER', 'ADMIN']))
-export const kitchenProcedure = t.procedure.use(hasRole(['KITCHEN', 'ADMIN']))
-export const adminProcedure = t.procedure.use(hasRole(['ADMIN']))
+export const cashierProcedure = t.procedure.use(hasRole(['CASHIER', 'ADMIN', 'SUPERADMIN']))
+export const kitchenProcedure = t.procedure.use(hasRole(['KITCHEN', 'ADMIN', 'SUPERADMIN']))
+export const adminProcedure = t.procedure.use(hasRole(['ADMIN', 'SUPERADMIN']))
+export const superAdminProcedure = t.procedure.use(hasRole(['SUPERADMIN']))

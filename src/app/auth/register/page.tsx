@@ -47,7 +47,7 @@ export default function RegisterPage() {
       }
 
       // Redirect to signin page after successful registration
-      router.push('/auth/signin?registered=true')
+      router.push('/auth/signin?registered=true&pending=true')
     } catch (err) {
       setError('An error occurred. Please try again.')
       setLoading(false)
@@ -59,7 +59,11 @@ export default function RegisterPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-3xl font-bold text-primary">Brigado Burger</CardTitle>
-          <CardDescription>Create your account to start ordering</CardDescription>
+          <CardDescription>Create your account</CardDescription>
+          <div className="mt-2 rounded-md bg-blue-50 dark:bg-blue-950 p-3 text-sm text-blue-800 dark:text-blue-200">
+            <p className="font-medium">Account Approval Required</p>
+            <p className="text-xs mt-1">Your account will be created but requires administrator approval before you can access the system.</p>
+          </div>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">

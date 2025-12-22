@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { signIn } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
@@ -13,6 +13,15 @@ export default function SignInPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  
+  useEffect(() => {
+    if (searchParams?.get('pending') === 'true') {
+      setError('Your account has been created but requires administrator approval before you can sign in.')
+    } else if (searchParams?.get('registered') === 'true') {
+      setError('Account created successfully! Please wait for administrator approval.')
+    }
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -27,7 +36,12 @@ export default function SignInPage() {
       })
 
       if (result?.error) {
-        setError('Invalid email or password')
+        // Check if it's a pending approval error
+        if (result.error.includes('pending approval') || result.error.includes('Account pending')) {
+          setError('Your account is pending administrator approval. Please contact an administrator.')
+        } else {
+          setError('Invalid email or password')
+        }
       } else {
         router.push('/')
       }
@@ -89,17 +103,6 @@ export default function SignInPage() {
             </div>
           </CardFooter>
         </form>
-        <div className="border-t p-6">
-          <div className="text-center text-sm text-muted-foreground">
-            <p className="mb-2 font-medium">Demo Accounts:</p>
-            <div className="space-y-1 text-xs">
-              <p>Admin: admin@brigado.com / password123</p>
-              <p>Cashier: cashier@brigado.com / password123</p>
-              <p>Kitchen: kitchen@brigado.com / password123</p>
-              <p>Customer: customer@brigado.com / password123</p>
-            </div>
-          </div>
-        </div>
       </Card>
     </div>
   )

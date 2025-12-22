@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { trpc } from '@/lib/trpc'
 import type { RouterOutputs } from '@/server/routers/_app'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,6 +13,8 @@ type Session = {
   sessionNumber: number
   orders: OrderHistoryItem[]
   totalRevenue: number
+  cashRevenue: number
+  cardRevenue: number
 }
 
 export default function HistoryPage() {
@@ -50,11 +52,21 @@ export default function HistoryPage() {
     sortedOrders.forEach((order, index) => {
       // Detect session reset: if order number is 1 or less than previous order number
       if (index > 0 && order.orderNumber <= sortedOrders[index - 1].orderNumber) {
+        // Calculate revenue breakdown for current session
+        const cashRevenue = currentSession
+          .filter(o => o.paymentMethod === 'CASH')
+          .reduce((sum, o) => sum + o.total, 0)
+        const cardRevenue = currentSession
+          .filter(o => o.paymentMethod === 'CARD' || o.paymentMethod === 'SQUARE')
+          .reduce((sum, o) => sum + o.total, 0)
+        
         // Save current session and start new one
         sessions.push({
           sessionNumber,
           orders: currentSession,
           totalRevenue: currentSession.reduce((sum, o) => sum + o.total, 0),
+          cashRevenue,
+          cardRevenue,
         })
         sessionNumber++
         currentSession = [order]
@@ -65,16 +77,38 @@ export default function HistoryPage() {
 
     // Add the last session
     if (currentSession.length > 0) {
+      const cashRevenue = currentSession
+        .filter(o => o.paymentMethod === 'CASH')
+        .reduce((sum, o) => sum + o.total, 0)
+      const cardRevenue = currentSession
+        .filter(o => o.paymentMethod === 'CARD' || o.paymentMethod === 'SQUARE')
+        .reduce((sum, o) => sum + o.total, 0)
+      
       sessions.push({
         sessionNumber,
         orders: currentSession,
         totalRevenue: currentSession.reduce((sum, o) => sum + o.total, 0),
+        cashRevenue,
+        cardRevenue,
       })
     }
 
     acc[date] = sessions
     return acc
   }, {} as Record<string, Session[]>)
+
+  // Auto-expand dates with only one session on initial load
+  useEffect(() => {
+    if (!orders || expandedDates.size > 0) return
+    
+    const datesWithSingleSession = Object.entries(sessionsByDate)
+      .filter(([_, sessions]) => sessions.length === 1)
+      .map(([date]) => date)
+    
+    if (datesWithSingleSession.length > 0) {
+      setExpandedDates(new Set(datesWithSingleSession))
+    }
+  }, [orders, sessionsByDate, expandedDates.size])
 
   const toggleDate = (date: string) => {
     const newExpanded = new Set(expandedDates)
@@ -124,6 +158,10 @@ export default function HistoryPage() {
             const isDateExpanded = expandedDates.has(date)
             const totalOrders = sessions.reduce((sum, session) => sum + session.orders.length, 0)
             const totalRevenue = sessions.reduce((sum, session) => sum + session.totalRevenue, 0)
+            const totalCashRevenue = sessions.reduce((sum, session) => sum + session.cashRevenue, 0)
+            const totalCardRevenue = sessions.reduce((sum, session) => sum + session.cardRevenue, 0)
+            const isSingleSession = sessions.length === 1
+            const singleSession = isSingleSession ? sessions[0] : null
 
             return (
               <Card key={date}>
@@ -142,7 +180,22 @@ export default function HistoryPage() {
                         <CardTitle>{date}</CardTitle>
                         <CardDescription>
                           {totalOrders} {totalOrders === 1 ? 'order' : 'orders'} •
-                          ${totalRevenue.toFixed(2)} total revenue
+                          ${totalRevenue.toFixed(2)} total
+                          {isSingleSession && singleSession ? (
+                            <>
+                              {' • '}
+                              <span className="text-green-600">Cash: ${singleSession.cashRevenue.toFixed(2)}</span>
+                              {' • '}
+                              <span className="text-blue-600">Card: ${singleSession.cardRevenue.toFixed(2)}</span>
+                            </>
+                          ) : (
+                            <>
+                              {' • '}
+                              <span className="text-green-600">Cash: ${totalCashRevenue.toFixed(2)}</span>
+                              {' • '}
+                              <span className="text-blue-600">Card: ${totalCardRevenue.toFixed(2)}</span>
+                            </>
+                          )}
                         </CardDescription>
                       </div>
                     </div>
@@ -158,7 +211,100 @@ export default function HistoryPage() {
                       {sessions.map((session) => {
                         const sessionKey = `${date}-session-${session.sessionNumber}`
                         const isSessionExpanded = expandedSessions.has(sessionKey)
+                        const isSingleSession = sessions.length === 1
 
+                        // If there's only one session, skip the session header and show orders directly
+                        if (isSingleSession) {
+                          return (
+                            <div key={sessionKey} className="space-y-3">
+                              {session.orders.map((order) => (
+                                  <div
+                                    key={order.id}
+                                    className="rounded-lg border bg-card p-4 hover:bg-muted/50 transition-colors"
+                                  >
+                                    <div className="flex items-start justify-between">
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-3 mb-2">
+                                          <div className="font-semibold text-lg">
+                                            Order #{order.orderNumber}
+                                          </div>
+                                          <span
+                                            className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusColor(
+                                              order.status
+                                            )}`}
+                                          >
+                                            {order.status}
+                                          </span>
+                                        </div>
+
+                                        <div className="text-sm text-muted-foreground mb-3">
+                                          {order.customerName && (
+                                            <span className="mr-3">Customer: {order.customerName}</span>
+                                          )}
+                                          <span className="mr-3">
+                                            {new Date(order.createdAt).toLocaleTimeString('en-US', {
+                                              hour: 'numeric',
+                                              minute: '2-digit',
+                                              timeZone: 'America/New_York',
+                                            })}
+                                          </span>
+                                          <span className="mr-3">{order.paymentMethod}</span>
+                                          <span>{order.orderType.replace('_', ' ')}</span>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                          {order.items.map((item) => (
+                                            <div
+                                              key={item.id}
+                                              className="flex items-start justify-between text-sm"
+                                            >
+                                              <div className="flex-1">
+                                                <div className="font-medium">
+                                                  {item.quantity}x {item.menuItemName}
+                                                </div>
+                                                {item.customizations && item.customizations.length > 0 && (
+                                                  <div className="text-xs text-muted-foreground mt-1">
+                                                    {item.customizations.map((c) => (
+                                                      <span key={c.id} className="mr-2">
+                                                        • {c.name}
+                                                        {c.price > 0 && ` (+$${c.price.toFixed(2)})`}
+                                                      </span>
+                                                    ))}
+                                                  </div>
+                                                )}
+                                              </div>
+                                              <div className="font-medium">
+                                                ${(item.price * item.quantity).toFixed(2)}
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      <div className="ml-6 text-right">
+                                        <div className="space-y-1">
+                                          <div className="text-xs text-muted-foreground">
+                                            Subtotal: ${order.subtotal.toFixed(2)}
+                                          </div>
+                                          {order.tax > 0 && (
+                                            <div className="text-xs text-muted-foreground">
+                                              Processing Fee: ${order.tax.toFixed(2)}
+                                            </div>
+                                          )}
+                                          <div className="text-sm text-muted-foreground mb-1">Total</div>
+                                          <div className="text-2xl font-bold text-primary">
+                                            ${order.total.toFixed(2)}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                            </div>
+                          )
+                        }
+
+                        // Multiple sessions - show session header
                         return (
                           <div key={sessionKey} className="border rounded-lg">
                             <div
@@ -176,7 +322,11 @@ export default function HistoryPage() {
                                     <div className="font-semibold">Session {session.sessionNumber}</div>
                                     <div className="text-sm text-muted-foreground">
                                       {session.orders.length} {session.orders.length === 1 ? 'order' : 'orders'} •
-                                      ${session.totalRevenue.toFixed(2)}
+                                      ${session.totalRevenue.toFixed(2)} total
+                                      {' • '}
+                                      <span className="text-green-600">Cash: ${session.cashRevenue.toFixed(2)}</span>
+                                      {' • '}
+                                      <span className="text-blue-600">Card: ${session.cardRevenue.toFixed(2)}</span>
                                     </div>
                                   </div>
                                 </div>

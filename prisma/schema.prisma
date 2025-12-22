@@ -43,7 +43,7 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   password      String?
-  role          UserRole  @default(CUSTOMER)
+  role          UserRole  @default(USER)
   image         String?
   accounts      Account[]
   sessions      Session[]
@@ -61,10 +61,12 @@ model VerificationToken {
 }
 
 enum UserRole {
+  SUPERADMIN
   ADMIN
   CASHIER
   KITCHEN
   CUSTOMER
+  USER
 }
 
 // Restaurant models

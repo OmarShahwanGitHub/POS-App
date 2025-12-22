@@ -1,11 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { useSession } from 'next-auth/react'
+import { useSession, signOut } from 'next-auth/react'
 import { trpc } from '@/lib/trpc'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { ShoppingCart, Plus, Minus, CreditCard } from 'lucide-react'
+import { ShoppingCart, Plus, Minus, CreditCard, LogOut } from 'lucide-react'
 
 type CartItem = {
   menuItemId: string
@@ -114,7 +114,18 @@ export default function OrderPage() {
         <div className="mx-auto max-w-7xl px-6 py-4">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold">Brigado Burger</h1>
-            <div className="text-sm">Welcome, {session?.user?.name}!</div>
+            <div className="flex items-center gap-4">
+              <div className="text-sm">Welcome, {session?.user?.name}!</div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => signOut({ callbackUrl: '/auth/signin' })}
+                className="bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20 border-primary-foreground/20"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
+              </Button>
+            </div>
           </div>
         </div>
       </div>
