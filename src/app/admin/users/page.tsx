@@ -78,16 +78,28 @@ export default function UsersPage() {
       }
       
       // Only include password if it's provided
-      if (formData.password) {
+      if (formData.password && formData.password.trim() !== '') {
         updateData.password = formData.password
       }
       
-      await updateUser.mutateAsync(updateData)
+      const result = await updateUser.mutateAsync(updateData)
+      
+      // Show success message
+      const message = formData.password && formData.password.trim() !== ''
+        ? `User updated successfully! Email: ${result.email}. Password has been changed.`
+        : `User updated successfully! Email: ${result.email}.`
+      
+      alert(message)
+      
       setEditingUserId(null)
       setFormData({ name: '', email: '', password: '', role: 'USER' })
       setShowEditPassword(false)
+      
+      // Refetch users to ensure UI is up to date
+      refetch()
     } catch (error: any) {
-      alert(error.message || 'Failed to update user')
+      console.error('Update user error:', error)
+      alert(`Failed to update user: ${error.message || 'Unknown error'}`)
     }
   }
 
