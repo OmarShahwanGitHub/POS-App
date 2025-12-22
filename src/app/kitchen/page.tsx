@@ -40,6 +40,40 @@ export default function KitchenPage() {
           return
         }
 
+        // Handle order events
+        if (data.type === 'order.created') {
+          // Vibrate for new order
+          if (navigator.vibrate) {
+            navigator.vibrate(300)
+          }
+          // Play notification sound if available
+          try {
+            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIGWi77+efTQ8MUKfj8LZjHAY4kdfyzHksBSR3x/DdkEAKFF606euoVRQKRp/g8r5sIQUqgc7y2Yk2CBlou+/nn00PDFCn4/C2YxwGOJHX8sx5LAUkd8fw3ZBACg==')
+            audio.volume = 0.5
+            audio.play().catch(() => {}) // Ignore errors if autoplay is blocked
+          } catch (e) {}
+        } else if (data.type === 'order.updated') {
+          // Vibrate for edited order (pattern: vibrate 200ms, pause 100ms, vibrate 200ms)
+          if (navigator.vibrate) {
+            navigator.vibrate([200, 100, 200])
+          }
+          // Play notification sound
+          try {
+            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIGWi77+efTQ8MUKfj8LZjHAY4kdfyzHksBSR3x/DdkEAKFF606euoVRQKRp/g8r5sIQUqgc7y2Yk2CBlou+/nn00PDFCn4/C2YxwGOJHX8sx5LAUkd8fw3ZBACg==')
+            audio.volume = 0.5
+            audio.play().catch(() => {})
+          } catch (e) {}
+          // Show notification for edited order
+          if (data.orderNumber) {
+            alert(`Order #${data.orderNumber} Edited - OK`)
+          }
+        } else if (data.type === 'order.status.changed') {
+          // Small vibration for status changes
+          if (navigator.vibrate) {
+            navigator.vibrate(100)
+          }
+        }
+
         // When we receive an order event, refetch the orders
         if (data.type === 'order.created' || data.type === 'order.updated' || data.type === 'order.status.changed') {
           // Small delay to ensure database is updated
