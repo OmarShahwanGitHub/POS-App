@@ -13,6 +13,7 @@
     "prisma:seed": "node prisma/seed.js",
     "prisma:create-superadmin": "node prisma/create-superadmin.js",
     "prisma:check-superadmin": "node prisma/check-superadmin.js",
+    "prisma:reset-password": "node prisma/reset-password.js",
     "postinstall": "prisma generate"
   },
   "keywords": [

@@ -15,6 +15,7 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
+          console.error('[Auth] Missing email or password')
           throw new Error('Invalid credentials')
         }
 
@@ -24,7 +25,13 @@ export const authOptions: NextAuthOptions = {
           },
         })
 
-        if (!user || !user.password) {
+        if (!user) {
+          console.error(`[Auth] User not found: ${credentials.email}`)
+          throw new Error('Invalid credentials')
+        }
+
+        if (!user.password) {
+          console.error(`[Auth] User has no password set: ${credentials.email}`)
           throw new Error('Invalid credentials')
         }
 
@@ -34,15 +41,18 @@ export const authOptions: NextAuthOptions = {
         )
 
         if (!isPasswordValid) {
+          console.error(`[Auth] Invalid password for: ${credentials.email}`)
           throw new Error('Invalid credentials')
         }
 
         // Block USER role from signing in (they need admin approval)
         if (user.role === 'USER') {
+          console.error(`[Auth] User account pending approval: ${credentials.email}`)
           throw new Error('Account pending approval. Please contact an administrator.')
         }
 
         // Allow SUPERADMIN to sign in (same as ADMIN)
+        console.log(`[Auth] Successful login: ${user.email} (${user.role})`)
 
         return {
           id: user.id,
