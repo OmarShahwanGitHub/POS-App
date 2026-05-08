@@ -45,27 +45,6 @@ export default function SignInPage() {
           <CardTitle className="text-3xl font-bold text-primary">Brigado Burger</CardTitle>
           <CardDescription>Sign in to access the POS system</CardDescription>
         </CardHeader>
-        <div className="px-6 pb-2">
-          <div
-            className="rounded-lg border border-orange-200/80 bg-orange-50/90 p-4 text-sm shadow-sm"
-            role="region"
-            aria-label="Demo login credentials"
-          >
-            <p className="mb-3 text-center font-semibold text-orange-950">Demo login</p>
-            <ul className="space-y-3 text-left font-mono text-xs text-orange-950/90">
-              <li>
-                <span className="font-sans text-[11px] font-medium text-muted-foreground">Cashier</span>
-                <div>cashier@brigado.com</div>
-                <div>password123</div>
-              </li>
-              <li>
-                <span className="font-sans text-[11px] font-medium text-muted-foreground">Kitchen</span>
-                <div>kitchen@brigado.com</div>
-                <div>password123</div>
-              </li>
-            </ul>
-          </div>
-        </div>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -110,6 +89,15 @@ export default function SignInPage() {
             </div>
           </CardFooter>
         </form>
+        <div className="border-t p-6">
+          <div className="text-center text-sm text-muted-foreground">
+            <p className="mb-2 font-medium">Demo Accounts:</p>
+            <div className="space-y-1 text-xs">
+              <p>Cashier: cashier@brigado.com / password123</p>
+              <p>Kitchen: kitchen@brigado.com / password123</p>
+            </div>
+          </div>
+        </div>
       </Card>
     </div>
   )
