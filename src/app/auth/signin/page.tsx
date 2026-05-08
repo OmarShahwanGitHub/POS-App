@@ -91,12 +91,10 @@ export default function SignInPage() {
         </form>
         <div className="border-t p-6">
           <div className="text-center text-sm text-muted-foreground">
-            <p className="mb-2 font-medium">Demo Accounts:</p>
-            <div className="space-y-1 text-xs">
-              <p>Admin: admin@brigado.com / password123</p>
-              <p>Cashier: cashier@brigado.com / password123</p>
-              <p>Kitchen: kitchen@brigado.com / password123</p>
-              <p>Customer: customer@brigado.com / password123</p>
+            <p className="mb-2 font-medium">Demo login</p>
+            <div className="space-y-1 font-mono text-xs">
+              <p>cashier@brigado.com / password123</p>
+              <p>kitchen@brigado.com / password123</p>
             </div>
           </div>
         </div>
